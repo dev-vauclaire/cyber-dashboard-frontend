@@ -28,20 +28,22 @@ function getSourceColorKey({ sourceId, sourceName }: Pick<SourceColorInput, 'sou
   return `${sourceId ?? ''}-${sourceName.trim().toLowerCase()}`;
 }
 
-function getSourceRegistryKey(sourceId: SourceColorInput['sourceId']) {
-  if (sourceId == null) {
-    return null;
-  }
-
-  return String(sourceId);
+function normalizeSourceName(sourceName: string) {
+  return sourceName.trim().toLowerCase();
 }
 
-function getRegistrySourceColor({
-  sourceId,
-  sourceColorRegistry,
-}: Pick<SourceColorInput, 'sourceId' | 'sourceColorRegistry'>) {
-  const registryKey = getSourceRegistryKey(sourceId);
+function getSourceIdRegistryKey(sourceId: SourceColorInput['sourceId']) {
+  return sourceId == null ? null : `id:${String(sourceId)}`;
+}
 
+function getSourceNameRegistryKey(sourceName: SourceColorInput['sourceName']) {
+  return `name:${normalizeSourceName(sourceName)}`;
+}
+
+function getRegistrySourceColorByKey(
+  registryKey: string | null,
+  sourceColorRegistry: SourceColorInput['sourceColorRegistry'],
+) {
   if (registryKey == null || sourceColorRegistry == null) {
     return null;
   }
@@ -55,6 +57,26 @@ function getRegistrySourceColor({
   return color;
 }
 
+function getRegistrySourceColor({
+  sourceId,
+  sourceName,
+  sourceColorRegistry,
+}: Pick<SourceColorInput, 'sourceId' | 'sourceName' | 'sourceColorRegistry'>) {
+  const sourceIdColor = getRegistrySourceColorByKey(
+    getSourceIdRegistryKey(sourceId),
+    sourceColorRegistry,
+  );
+
+  if (sourceIdColor != null) {
+    return sourceIdColor;
+  }
+
+  return getRegistrySourceColorByKey(
+    getSourceNameRegistryKey(sourceName),
+    sourceColorRegistry,
+  );
+}
+
 export function buildSourceColorRegistry(sources: Source[]): SourceColorRegistry {
   return new Map(
     sources.flatMap((source) => {
@@ -62,7 +84,10 @@ export function buildSourceColorRegistry(sources: Source[]): SourceColorRegistry
         return [];
       }
 
-      return [[String(source.source_id), source.color] as const];
+      return [
+        [`id:${String(source.source_id)}`, source.color] as const,
+        [`name:${normalizeSourceName(source.source_name)}`, source.color] as const,
+      ];
     }),
   );
 }
@@ -76,6 +101,7 @@ export function resolveSourceColor({
   if (sourceColorRegistry != null) {
     const registryColor = getRegistrySourceColor({
       sourceId,
+      sourceName,
       sourceColorRegistry,
     });
 
