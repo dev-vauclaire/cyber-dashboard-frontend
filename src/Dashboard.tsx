@@ -131,7 +131,7 @@ export default function Dashboard(props: { disableCustomTheme?: boolean }) {
               spacing={4}
               sx={{ width: '100%', maxWidth: { sm: '100%', md: '1700px' } }}
             >
-              <OverviewSection dashboardControls={dashboardControls} />
+              <OverviewSection refreshToken={refreshToken} />
               <ChartsSection dashboardControls={dashboardControls} />
               <AlertsSection dashboardControls={dashboardControls} />
               <AttacksSection dashboardControls={dashboardControls} />

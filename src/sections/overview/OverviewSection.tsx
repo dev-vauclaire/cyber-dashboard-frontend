@@ -5,84 +5,97 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { fetchDashboardOverview } from '../../api/dashboard';
 import StatCard from '../../components/cards/StatCard';
-import type { DashboardPageControls } from '../../types/dashboard';
+import type { DashboardOverview } from '../../types/dashboard';
 
 function formatCount(value: number | undefined) {
   if (value == null) {
-    return '';
+    return '--';
   }
 
   return new Intl.NumberFormat('fr-FR').format(value);
 }
 
+function hasDashboardOverviewData(
+  data: DashboardOverview | undefined,
+): data is DashboardOverview {
+  return data != null;
+}
+
+const overviewCardDefinitions = [
+  {
+    key: 'total_attacks',
+    title: 'Total des attaques',
+    interval: 'Toutes sources confondues',
+  },
+  {
+    key: 'total_common_ip_alerts',
+    title: 'Alertes d\'IP communes',
+    interval: 'Nombre d\'alertes d\'IP communes a au moins 2 sources',
+  },
+  {
+    key: 'total_active_sources',
+    title: 'Sources actives',
+    interval: 'Sources actuellement actives',
+  },
+  {
+    key: 'total_inactive_sources',
+    title: 'Sources inactives',
+    interval: 'Sources actuellement inactives',
+  },
+] as const;
+
 type OverviewSectionProps = {
-  dashboardControls: DashboardPageControls;
+  refreshToken: number;
 };
 
-export default function OverviewSection({ dashboardControls }: OverviewSectionProps) {
-  const { data, isLoading, isError } = useQuery({
+export default function OverviewSection({ refreshToken }: OverviewSectionProps) {
+  const { data, isLoading, isError, isSuccess } = useQuery({
     queryFn: fetchDashboardOverview,
-    queryKey: ['dashboardOverview', dashboardControls.refreshToken],
+    queryKey: ['dashboardOverview', refreshToken],
   });
+  const isEmpty = isSuccess && !hasDashboardOverviewData(data);
 
   return (
     <Stack
       component="section"
       id="overview"
       spacing={2}
-      data-refresh-token={dashboardControls.refreshToken}
+      data-refresh-token={refreshToken}
       sx={{ scrollMarginTop: 144 }}
     >
       <Stack spacing={0.5}>
         <Typography component="h2" variant="h5">
-          Overview
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Premiere carte de synthese, alignee sur l'endpoint documente
-          `/api/dashboard/overview`.
+          Aperçu global
         </Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Le refresh global du header relance deja cette section.
+          Cette section n&apos;est pas reliée au filtre global de date du header. Seul
+          le refresh global la relance.
         </Typography>
       </Stack>
       <Grid container spacing={2} columns={12}>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <StatCard
-            title="Total des attaques"
-            value={isError ? 'Indisponible' : formatCount(data?.total_attacks)}
-            interval="Volume global"
-            isLoading={isLoading}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <StatCard
-            title="Alertes IP communes"
-            value={isError ? 'Indisponible' : formatCount(data?.total_common_ip_alerts)}
-            interval="Correlation common IP"
-            isLoading={isLoading}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <StatCard
-            title="Sources actives"
-            value={isError ? 'Indisponible' : formatCount(data?.total_active_sources)}
-            interval="Sources actuellement actives"
-            isLoading={isLoading}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <StatCard
-            title="Sources inactives"
-            value={isError ? 'Indisponible' : formatCount(data?.total_inactive_sources)}
-            interval="Sources actuellement inactives"
-            isLoading={isLoading}
-          />
-        </Grid>
+        {overviewCardDefinitions.map((card) => (
+          <Grid key={card.key} size={{ xs: 12, sm: 6, lg: 3 }}>
+            <StatCard
+              title={card.title}
+              value={
+                isError || isEmpty
+                  ? '--'
+                  : formatCount(data?.[card.key])
+              }
+              interval={card.interval}
+              isLoading={isLoading}
+            />
+          </Grid>
+        ))}
       </Grid>
       {isError ? (
         <Alert severity="warning">
-          L'overview n'a pas pu etre chargee. La structure frontend reste en place pour
-          la suite.
+          Impossible de charger les KPI d&apos;overview pour le moment.
+        </Alert>
+      ) : null}
+      {isEmpty ? (
+        <Alert severity="info">
+          Aucun indicateur d&apos;overview n&apos;a ete retourne par l&apos;API.
         </Alert>
       ) : null}
     </Stack>

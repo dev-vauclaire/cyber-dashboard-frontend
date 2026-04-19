@@ -48,11 +48,11 @@ export default function DashboardHeader({
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
             <SecurityIcon color="primary" fontSize="large" />
             <Typography component="h1" variant="h4">
-              Cyber Dashboard
+              Tableau de bord de cybersécurité
             </Typography>
           </Stack>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Visualez et mutualisez les attaques remontées par vos outils de sécurité
+            Visualisez et mutualisez les attaques remontées par vos outils de sécurité
           </Typography>
         </Stack>
         <Stack
@@ -77,7 +77,7 @@ export default function DashboardHeader({
             startIcon={<RefreshRoundedIcon fontSize="small" />}
             onClick={onGlobalRefresh}
           >
-            Refresh
+            Rafraîchir
           </Button>
           <ColorModeIconDropdown />
         </Stack>
