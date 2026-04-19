@@ -44,32 +44,21 @@ const overviewCardDefinitions = [
   },
 ] as const;
 
-type OverviewSectionProps = {
-  refreshToken: number;
-};
-
-export default function OverviewSection({ refreshToken }: OverviewSectionProps) {
+export default function OverviewSection() {
   const { data, isLoading, isError, isSuccess } = useQuery({
     queryFn: fetchDashboardOverview,
-    queryKey: ['dashboardOverview', refreshToken],
+    queryKey: ['dashboardOverview'],
   });
   const isEmpty = isSuccess && !hasDashboardOverviewData(data);
 
   return (
-    <Stack
-      component="section"
-      id="overview"
-      spacing={2}
-      data-refresh-token={refreshToken}
-      sx={{ scrollMarginTop: 144 }}
-    >
+    <Stack component="section" id="overview" spacing={2} sx={{ scrollMarginTop: 144 }}>
       <Stack spacing={0.5}>
         <Typography component="h2" variant="h5">
           Aperçu global
         </Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Cette section n&apos;est pas reliée au filtre global de date du header. Seul
-          le refresh global la relance.
+          Vue synthétique fournie directement par le backend.
         </Typography>
       </Stack>
       <Grid container spacing={2} columns={12}>

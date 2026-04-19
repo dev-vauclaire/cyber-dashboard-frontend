@@ -1,21 +1,48 @@
+import * as React from 'react';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
-import Alert from '@mui/material/Alert';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import LinearChart from '../../components/charts/LinearChart';
 import SourceDistributionChart from '../../components/charts/SourceDistributionChart';
 import { fetchAttacksBySource, fetchAttacksBySourceTimeseries } from '../../api/stats';
-import type { DashboardPageControls } from '../../types/dashboard';
 import type {
+  AttackStatsDateRangeQuery,
   AttacksBySourceResponse,
   AttacksBySourceTimeseriesResponse,
 } from '../../types/stats';
-import {
-  buildDashboardAttackStatsDateRangeQuery,
-  formatDashboardGlobalDateRange,
-} from '../../utils/dashboardFilters';
 import { formatDateToParisDayLabel } from '../../utils/dateUtils';
+
+type ChartsLocalDateRange = {
+  from: Dayjs;
+  to: Dayjs;
+};
+
+function createDefaultChartsDateRange(): ChartsLocalDateRange {
+  const today = dayjs();
+
+  return {
+    from: today.subtract(6, 'day'),
+    to: today,
+  };
+}
+
+function formatLocalDateRange(localDateRange: ChartsLocalDateRange): string {
+  return `${localDateRange.from.format('DD/MM/YYYY')} -> ${localDateRange.to.format('DD/MM/YYYY')}`;
+}
+
+function buildAttackStatsDateRangeQuery(
+  localDateRange: ChartsLocalDateRange,
+): AttackStatsDateRangeQuery {
+  const fromDate = localDateRange.from.format('YYYY-MM-DD');
+  const toDate = localDateRange.to.format('YYYY-MM-DD');
+
+  return {
+    from: `${fromDate}T00:00:00Z`,
+    to: `${toDate}T23:59:59Z`,
+  };
+}
 
 function buildTimelineChartData(data: AttacksBySourceTimeseriesResponse | undefined) {
   if (data == null) {
@@ -66,65 +93,34 @@ function buildSourceDistributionData(data: AttacksBySourceResponse | undefined) 
   };
 }
 
-type ChartsSectionProps = {
-  dashboardControls: DashboardPageControls;
-};
-
-export default function ChartsSection({ dashboardControls }: ChartsSectionProps) {
-  const dateRangeQuery = buildDashboardAttackStatsDateRangeQuery(
-    dashboardControls.globalDateRange,
-  );
+export default function ChartsSection() {
+  const localDateRange = React.useMemo(() => createDefaultChartsDateRange(), []);
+  const dateRangeQuery = buildAttackStatsDateRangeQuery(localDateRange);
   const timelineQuery = useQuery({
-    queryFn: () => fetchAttacksBySourceTimeseries(dateRangeQuery!),
-    queryKey: [
-      'chartsTimeline',
-      dateRangeQuery?.from ?? null,
-      dateRangeQuery?.to ?? null,
-      dashboardControls.refreshToken,
-    ],
-    enabled: dateRangeQuery != null,
+    queryFn: () => fetchAttacksBySourceTimeseries(dateRangeQuery),
+    queryKey: ['chartsTimeline', dateRangeQuery.from, dateRangeQuery.to],
   });
   const sourceDistributionQuery = useQuery({
-    queryFn: () => fetchAttacksBySource(dateRangeQuery!),
-    queryKey: [
-      'chartsBySource',
-      dateRangeQuery?.from ?? null,
-      dateRangeQuery?.to ?? null,
-      dashboardControls.refreshToken,
-    ],
-    enabled: dateRangeQuery != null,
+    queryFn: () => fetchAttacksBySource(dateRangeQuery),
+    queryKey: ['chartsBySource', dateRangeQuery.from, dateRangeQuery.to],
   });
 
   const timelineChartData = buildTimelineChartData(timelineQuery.data);
   const sourceDistributionData = buildSourceDistributionData(sourceDistributionQuery.data);
-  const isDateRangeIncomplete =
-    dashboardControls.globalDateRange.from == null || dashboardControls.globalDateRange.to == null;
 
   return (
-    <Stack
-      component="section"
-      id="charts"
-      spacing={2}
-      sx={{ scrollMarginTop: 144 }}
-    >
+    <Stack component="section" id="charts" spacing={2} sx={{ scrollMarginTop: 144 }}>
       <Stack spacing={0.5}>
         <Typography component="h2" variant="h5">
           Graphiques
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Zone reservee a l'evolution temporelle et a la répartition des attaques par source.
+          Evolution temporelle et repartition des attaques par source.
         </Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Periode globale selectionnee :{' '}
-          {formatDashboardGlobalDateRange(dashboardControls.globalDateRange)}
+          Periode par defaut : {formatLocalDateRange(localDateRange)}
         </Typography>
       </Stack>
-      {isDateRangeIncomplete ? (
-        <Alert severity="info">
-          Selectionne une periode complete dans le header pour charger les donnees
-          d&apos;analyse.
-        </Alert>
-      ) : null}
       <Grid container spacing={2} columns={12}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <LinearChart
@@ -133,7 +129,11 @@ export default function ChartsSection({ dashboardControls }: ChartsSectionProps)
             series={timelineChartData.series}
             isLoading={timelineQuery.isLoading}
             isError={timelineQuery.isError}
-            isEmpty={!timelineQuery.isLoading && !timelineQuery.isError && timelineChartData.series.length === 0}
+            isEmpty={
+              !timelineQuery.isLoading &&
+              !timelineQuery.isError &&
+              timelineChartData.series.length === 0
+            }
           />
         </Grid>
         <Grid size={{ xs: 12, lg: 4 }}>

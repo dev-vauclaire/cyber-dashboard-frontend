@@ -1,29 +1,12 @@
-import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import SecurityIcon from '@mui/icons-material/Security';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
-import CustomDatePicker from '../../components/filters/CustomDatePicker';
 import ColorModeIconDropdown from '../../shared-theme/ColorModeIconDropdown';
-import type { DashboardGlobalDateRange } from '../../types/dashboard';
 import { DASHBOARD_SECTION_LINKS } from '../../utils/dashboardSections';
 
-type DashboardHeaderProps = {
-  globalDateRange: DashboardGlobalDateRange;
-  onGlobalFromChange: DashboardDateChangeHandler;
-  onGlobalToChange: DashboardDateChangeHandler;
-  onGlobalRefresh: () => void;
-};
-
-type DashboardDateChangeHandler = (value: DashboardGlobalDateRange['from']) => void;
-
-export default function DashboardHeader({
-  globalDateRange,
-  onGlobalFromChange,
-  onGlobalToChange,
-  onGlobalRefresh,
-}: DashboardHeaderProps) {
+export default function DashboardHeader() {
   return (
     <Stack
       component="header"
@@ -59,26 +42,6 @@ export default function DashboardHeader({
           direction={{ xs: 'column', md: 'row' }}
           sx={{ gap: 1, alignItems: { xs: 'stretch', sm: 'center' } }}
         >
-          <CustomDatePicker
-            label="Du"
-            value={globalDateRange.from}
-            onChange={onGlobalFromChange}
-            maxDate={globalDateRange.to}
-          />
-          <CustomDatePicker
-            label="Au"
-            value={globalDateRange.to}
-            onChange={onGlobalToChange}
-            minDate={globalDateRange.from}
-          />
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<RefreshRoundedIcon fontSize="small" />}
-            onClick={onGlobalRefresh}
-          >
-            Rafraîchir
-          </Button>
           <ColorModeIconDropdown />
         </Stack>
       </Stack>
