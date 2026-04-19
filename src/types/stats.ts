@@ -22,6 +22,24 @@ export type AttacksBySourceResponse = AttackSummary & {
   by_source: AttacksBySourceItem[];
 };
 
+export type AttacksBySourceTimeseriesItem = {
+  source_id: number;
+  source_name: string;
+  source_color: string | null;
+  source_is_active_current: boolean;
+  attack_count: number;
+  data: number[];
+};
+
+export type AttacksBySourceTimeseriesResponse = {
+  from: IsoUtcDateTimeString;
+  to: IsoUtcDateTimeString;
+  bucket: 'day';
+  total_attacks: number;
+  bucket_starts_utc: IsoUtcDateTimeString[];
+  series: AttacksBySourceTimeseriesItem[];
+};
+
 export type AttacksByTypeItem = {
   attack_type: string;
   attack_count: number;

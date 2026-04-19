@@ -1,42 +1,59 @@
+import Alert from '@mui/material/Alert';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import Chip from '@mui/material/Chip';
+import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { LineChart } from '@mui/x-charts/LineChart';
+import SourceLegend, { type SourceLegendItem } from './SourceLegend';
+import { useSourceColorContext } from '../../internals/source-colors/SourceColorContext';
 import { getSourceColor } from '../../utils/sourceColors';
 
-const timelineLabels = ['13 Apr', '14 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr'];
+export type LinearChartSeries = {
+  sourceId: number;
+  sourceName: string;
+  attackCount: number;
+  sourceColor?: string | null;
+  data: number[];
+};
 
-const sourceSeries = [
-  {
-    sourceId: 2,
-    sourceName: 'LURIO CHV SI',
-    data: [28, 35, 31, 42, 38, 45, 54],
-  },
-  {
-    sourceId: 3,
-    sourceName: 'LURIO CHV 4G',
-    data: [18, 16, 22, 19, 24, 28, 26],
-  },
-  {
-    sourceId: 10,
-    sourceName: 'DETOXIO Scanner',
-    data: [9, 12, 14, 11, 16, 19, 23],
-  },
-];
+type LinearChartProps = {
+  totalAttacks: number;
+  labels: string[];
+  series: LinearChartSeries[];
+  isLoading: boolean;
+  isError: boolean;
+  isEmpty: boolean;
+};
 
-export default function LinearChart() {
-  const totalPreview = sourceSeries.reduce(
-    (total, source) => total + source.data[source.data.length - 1],
-    0,
-  );
+function formatCount(value: number): string {
+  return new Intl.NumberFormat('fr-FR').format(value);
+}
+
+function buildLegendItems(series: LinearChartSeries[]): SourceLegendItem[] {
+  return series.map((item) => ({
+    sourceId: item.sourceId,
+    sourceName: item.sourceName,
+    sourceColor: item.sourceColor,
+    meta: `${formatCount(item.attackCount)} attaques`,
+  }));
+}
+
+export default function LinearChart({
+  totalAttacks,
+  labels,
+  series,
+  isLoading,
+  isError,
+  isEmpty,
+}: LinearChartProps) {
+  const { sourceColorRegistry } = useSourceColorContext();
 
   return (
     <Card variant="outlined" sx={{ width: '100%', height: '100%' }}>
       <CardContent>
         <Typography component="h2" variant="subtitle2" gutterBottom>
-          Evolution des attaques
+          Evolution des attaques dans le temps
         </Typography>
         <Stack sx={{ justifyContent: 'space-between' }}>
           <Stack
@@ -47,42 +64,69 @@ export default function LinearChart() {
               gap: 1,
             }}
           >
-            <Typography variant="h4" component="p">
-              {totalPreview}
-            </Typography>
-            <Chip size="small" color="info" label="Demo" />
+            {isLoading ? (
+              <Skeleton variant="text" width={90} height={48} />
+            ) : (
+              <Typography variant="h4" component="p">
+                {formatCount(totalAttacks)}
+              </Typography>
+            )}
           </Stack>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Apercu du composant timeline. Les series utiliseront la meme couleur par
-            source dans toute la V1.
+            Une courbe par source, agregee par jour sur la periode selectionnee.
           </Typography>
         </Stack>
-        <LineChart
-          colors={sourceSeries.map((source) =>
-            getSourceColor({
-              sourceId: source.sourceId,
-              sourceName: source.sourceName,
-            }),
-          )}
-          xAxis={[
-            {
-              scaleType: 'point',
-              data: timelineLabels,
-              height: 24,
-            },
-          ]}
-          yAxis={[{ width: 50 }]}
-          series={sourceSeries.map((source) => ({
-            id: source.sourceName,
-            label: source.sourceName,
-            data: source.data,
-            showMark: false,
-            curve: 'linear',
-          }))}
-          height={280}
-          margin={{ left: 0, right: 20, top: 20, bottom: 0 }}
-          grid={{ horizontal: true }}
-        />
+        {isLoading ? (
+          <Stack spacing={2} sx={{ pt: 2 }}>
+            <Skeleton variant="rounded" height={280} />
+            <Skeleton variant="text" width="70%" />
+            <Skeleton variant="text" width="55%" />
+          </Stack>
+        ) : null}
+        {isError ? (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            Impossible de charger l&apos;evolution des attaques pour cette periode.
+          </Alert>
+        ) : null}
+        {isEmpty ? (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            Aucune attaque n&apos;a ete trouvee sur la periode selectionnee.
+          </Alert>
+        ) : null}
+        {!isLoading && !isError && !isEmpty ? (
+          <Stack>
+            <LineChart
+              colors={series.map((item) =>
+                getSourceColor({
+                  sourceId: item.sourceId,
+                  sourceName: item.sourceName,
+                  sourceColor: item.sourceColor,
+                  sourceColorRegistry,
+                }),
+              )}
+              xAxis={[
+                {
+                  scaleType: 'point',
+                  data: labels,
+                  height: 24,
+                },
+              ]}
+              yAxis={[{ width: 50 }]}
+              series={series.map((item) => ({
+                id: item.sourceName,
+                label: item.sourceName,
+                data: item.data,
+                showMark: false,
+                curve: 'linear',
+              }))}
+              height={280}
+              margin={{ left: 0, right: 20, top: 20, bottom: 0 }}
+              grid={{ horizontal: true }}
+              hideLegend
+            />
+            <SourceLegend items={buildLegendItems(series)} />
+          </Stack>
+        ) : null}
       </CardContent>
     </Card>
   );

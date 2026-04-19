@@ -42,3 +42,21 @@ export function formatUtcDateToParis(
 ): string {
   return formatUtcDateTimeToParis(isoDate, options);
 }
+
+function normalizeDateInput(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value);
+}
+
+export function formatDateToParisDayLabel(value: Date | string): string {
+  const date = normalizeDateInput(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleDateString(PARIS_LOCALE, {
+    timeZone: PARIS_TIME_ZONE,
+    day: '2-digit',
+    month: 'short',
+  });
+}

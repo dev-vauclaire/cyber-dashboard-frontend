@@ -7,6 +7,7 @@ export type Source = {
   is_active: boolean;
   created_at: IsoUtcDateTimeString;
   sensor_type_code: string;
+  color: string | null;
   sensor_type_label: string;
 };
 
@@ -37,4 +38,5 @@ export type SourceColorInput = {
   sourceId?: number | string;
   sourceName: string;
   sourceColor?: string | null;
+  sourceColorRegistry?: ReadonlyMap<string, string>;
 };

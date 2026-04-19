@@ -1,4 +1,4 @@
-import type { SourceColorInput } from '../types/sources';
+import type { Source, SourceColorInput } from '../types/sources';
 
 const SOURCE_COLOR_PALETTE = [
   '#0F766E',
@@ -10,6 +10,8 @@ const SOURCE_COLOR_PALETTE = [
   '#0369A1',
   '#475569',
 ];
+
+export type SourceColorRegistry = ReadonlyMap<string, string>;
 
 function hashLabel(value: string) {
   let hash = 0;
@@ -26,12 +28,61 @@ function getSourceColorKey({ sourceId, sourceName }: Pick<SourceColorInput, 'sou
   return `${sourceId ?? ''}-${sourceName.trim().toLowerCase()}`;
 }
 
+function getSourceRegistryKey(sourceId: SourceColorInput['sourceId']) {
+  if (sourceId == null) {
+    return null;
+  }
+
+  return String(sourceId);
+}
+
+function getRegistrySourceColor({
+  sourceId,
+  sourceColorRegistry,
+}: Pick<SourceColorInput, 'sourceId' | 'sourceColorRegistry'>) {
+  const registryKey = getSourceRegistryKey(sourceId);
+
+  if (registryKey == null || sourceColorRegistry == null) {
+    return null;
+  }
+
+  const color = sourceColorRegistry.get(registryKey);
+
+  if (color == null || color.trim() === '') {
+    return null;
+  }
+
+  return color;
+}
+
+export function buildSourceColorRegistry(sources: Source[]): SourceColorRegistry {
+  return new Map(
+    sources.flatMap((source) => {
+      if (source.color == null || source.color.trim() === '') {
+        return [];
+      }
+
+      return [[String(source.source_id), source.color] as const];
+    }),
+  );
+}
+
 export function resolveSourceColor({
   sourceId,
   sourceName,
   sourceColor,
+  sourceColorRegistry,
 }: SourceColorInput) {
-  if (sourceColor != null && sourceColor.trim() !== '') {
+  if (sourceColorRegistry != null) {
+    const registryColor = getRegistrySourceColor({
+      sourceId,
+      sourceColorRegistry,
+    });
+
+    if (registryColor != null) {
+      return registryColor;
+    }
+  } else if (sourceColor != null && sourceColor.trim() !== '') {
     return sourceColor;
   }
 

@@ -3,6 +3,7 @@ import type {
   AttackStatsDateRangeQuery,
   AttackSummary,
   AttacksBySourceResponse,
+  AttacksBySourceTimeseriesResponse,
   AttacksByTypeResponse,
 } from '../types/stats';
 
@@ -20,6 +21,17 @@ export async function fetchAttacksBySource(
   return apiClient.get<AttacksBySourceResponse>('/api/stats/attacks/by-source', {
     query,
   });
+}
+
+export async function fetchAttacksBySourceTimeseries(
+  query: AttackStatsDateRangeQuery,
+): Promise<AttacksBySourceTimeseriesResponse> {
+  return apiClient.get<AttacksBySourceTimeseriesResponse>(
+    '/api/stats/attacks/by-source-timeseries',
+    {
+      query,
+    },
+  );
 }
 
 export async function fetchAttacksByType(
