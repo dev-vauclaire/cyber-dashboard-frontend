@@ -1,22 +1,34 @@
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import SecurityIcon from '@mui/icons-material/Security';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import CustomDatePicker from '../../components/filters/CustomDatePicker';
-import Search from '../../components/filters/Search';
 import ColorModeIconDropdown from '../../shared-theme/ColorModeIconDropdown';
+import type { DashboardGlobalDateRange } from '../../types/dashboard';
 import { DASHBOARD_SECTION_LINKS } from '../../utils/dashboardSections';
 
-export default function DashboardHeader() {
+type DashboardHeaderProps = {
+  globalDateRange: DashboardGlobalDateRange;
+  onGlobalFromChange: DashboardDateChangeHandler;
+  onGlobalToChange: DashboardDateChangeHandler;
+  onGlobalRefresh: () => void;
+};
+
+type DashboardDateChangeHandler = (value: DashboardGlobalDateRange['from']) => void;
+
+export default function DashboardHeader({
+  globalDateRange,
+  onGlobalFromChange,
+  onGlobalToChange,
+  onGlobalRefresh,
+}: DashboardHeaderProps) {
   return (
     <Stack
       component="header"
       spacing={2}
       sx={(theme) => ({
-        position: 'sticky',
-        top: 0,
-        zIndex: theme.zIndex.appBar,
         width: '100%',
         maxWidth: { sm: '100%', md: '1700px' },
         py: 2,
@@ -40,15 +52,33 @@ export default function DashboardHeader() {
             </Typography>
           </Stack>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            V1 mono-page basee sur le template Material UI existant.
+            Visualez et mutualisez les attaques remontées par vos outils de sécurité
           </Typography>
         </Stack>
         <Stack
-          direction={{ xs: 'column', sm: 'row' }}
+          direction={{ xs: 'column', md: 'row' }}
           sx={{ gap: 1, alignItems: { xs: 'stretch', sm: 'center' } }}
         >
-          <Search />
-          <CustomDatePicker />
+          <CustomDatePicker
+            label="Du"
+            value={globalDateRange.from}
+            onChange={onGlobalFromChange}
+            maxDate={globalDateRange.to}
+          />
+          <CustomDatePicker
+            label="Au"
+            value={globalDateRange.to}
+            onChange={onGlobalToChange}
+            minDate={globalDateRange.from}
+          />
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<RefreshRoundedIcon fontSize="small" />}
+            onClick={onGlobalRefresh}
+          >
+            Refresh
+          </Button>
           <ColorModeIconDropdown />
         </Stack>
       </Stack>

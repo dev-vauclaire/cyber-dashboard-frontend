@@ -3,16 +3,32 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import LinearChart from '../../components/charts/LinearChart';
 import ProtocoleBySource from '../../components/charts/ProtocoleBySource';
+import type { DashboardPageControls } from '../../types/dashboard';
+import { formatDashboardGlobalDateRange } from '../../utils/dashboardFilters';
 
-export default function ChartsSection() {
+type ChartsSectionProps = {
+  dashboardControls: DashboardPageControls;
+};
+
+export default function ChartsSection({ dashboardControls }: ChartsSectionProps) {
   return (
-    <Stack component="section" id="charts" spacing={2} sx={{ scrollMarginTop: 144 }}>
+    <Stack
+      component="section"
+      id="charts"
+      spacing={2}
+      data-refresh-token={dashboardControls.refreshToken}
+      sx={{ scrollMarginTop: 144 }}
+    >
       <Stack spacing={0.5}>
         <Typography component="h2" variant="h5">
           Charts
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Zone reservee a l'evolution temporelle et a la repartition par source.
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          Periode globale selectionnee :{' '}
+          {formatDashboardGlobalDateRange(dashboardControls.globalDateRange)}
         </Typography>
       </Stack>
       <Grid container spacing={2} columns={12}>

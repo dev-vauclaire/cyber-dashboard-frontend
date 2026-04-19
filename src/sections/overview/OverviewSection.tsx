@@ -5,6 +5,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { fetchDashboardOverview } from '../../api/dashboard';
 import StatCard from '../../components/cards/StatCard';
+import type { DashboardPageControls } from '../../types/dashboard';
 
 function formatCount(value: number | undefined) {
   if (value == null) {
@@ -14,14 +15,24 @@ function formatCount(value: number | undefined) {
   return new Intl.NumberFormat('fr-FR').format(value);
 }
 
-export default function OverviewSection() {
+type OverviewSectionProps = {
+  dashboardControls: DashboardPageControls;
+};
+
+export default function OverviewSection({ dashboardControls }: OverviewSectionProps) {
   const { data, isLoading, isError } = useQuery({
     queryFn: fetchDashboardOverview,
-    queryKey: ['dashboardOverview'],
+    queryKey: ['dashboardOverview', dashboardControls.refreshToken],
   });
 
   return (
-    <Stack component="section" id="overview" spacing={2} sx={{ scrollMarginTop: 144 }}>
+    <Stack
+      component="section"
+      id="overview"
+      spacing={2}
+      data-refresh-token={dashboardControls.refreshToken}
+      sx={{ scrollMarginTop: 144 }}
+    >
       <Stack spacing={0.5}>
         <Typography component="h2" variant="h5">
           Overview
@@ -29,6 +40,9 @@ export default function OverviewSection() {
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Premiere carte de synthese, alignee sur l'endpoint documente
           `/api/dashboard/overview`.
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          Le refresh global du header relance deja cette section.
         </Typography>
       </Stack>
       <Grid container spacing={2} columns={12}>

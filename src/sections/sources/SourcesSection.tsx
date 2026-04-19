@@ -4,10 +4,21 @@ import Grid from '@mui/material/Grid';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import type { DashboardPageControls } from '../../types/dashboard';
 
-export default function SourcesSection() {
+type SourcesSectionProps = {
+  dashboardControls: DashboardPageControls;
+};
+
+export default function SourcesSection({ dashboardControls }: SourcesSectionProps) {
   return (
-    <Stack component="section" id="sources" spacing={2} sx={{ scrollMarginTop: 144 }}>
+    <Stack
+      component="section"
+      id="sources"
+      spacing={2}
+      data-refresh-token={dashboardControls.refreshToken}
+      sx={{ scrollMarginTop: 144 }}
+    >
       <Stack spacing={0.5}>
         <Typography component="h2" variant="h5">
           Sources
@@ -15,6 +26,9 @@ export default function SourcesSection() {
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Emplacement prepare pour l'inventaire, le renommage et
           l'activation/desactivation.
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          Le refresh global du header sera egalement reutilise ici.
         </Typography>
       </Stack>
       <Grid container spacing={2} columns={12}>

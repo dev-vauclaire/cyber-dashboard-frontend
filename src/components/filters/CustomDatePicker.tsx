@@ -1,4 +1,3 @@
-import * as React from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/fr';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
@@ -20,6 +19,14 @@ dayjs.extend(localizedFormat);
 dayjs.locale('fr');
 
 interface ButtonFieldProps extends DatePickerFieldProps {}
+
+type CustomDatePickerProps = {
+  label: string;
+  value: Dayjs | null;
+  onChange: (newValue: Dayjs | null) => void;
+  minDate?: Dayjs | null;
+  maxDate?: Dayjs | null;
+};
 
 function ButtonField(props: ButtonFieldProps) {
   const { forwardedProps } = useSplitFieldProps(props, 'date');
@@ -47,9 +54,21 @@ function ButtonField(props: ButtonFieldProps) {
   );
 }
 
-export default function CustomDatePicker() {
-  const [value, setValue] = React.useState<Dayjs | null>(dayjs());
+function buildPickerLabel(label: string, value: Dayjs | null) {
+  if (value == null) {
+    return label;
+  }
 
+  return `${label} ${value.format('DD/MM/YYYY')}`;
+}
+
+export default function CustomDatePicker({
+  label,
+  value,
+  onChange,
+  minDate,
+  maxDate,
+}: CustomDatePickerProps) {
   return (
     <LocalizationProvider
       dateAdapter={AdapterDayjs}
@@ -58,9 +77,11 @@ export default function CustomDatePicker() {
     >
       <DatePicker
         value={value}
-        label={value == null ? 'Choisir une date' : value.format('D MMMM YYYY')}
+        label={buildPickerLabel(label, value)}
         format="DD/MM/YYYY"
-        onChange={(newValue) => setValue(newValue)}
+        onChange={onChange}
+        minDate={minDate ?? undefined}
+        maxDate={maxDate ?? undefined}
         slots={{ field: ButtonField }}
         slotProps={{
           nextIconButton: { size: 'small' },

@@ -4,16 +4,32 @@ import Grid from '@mui/material/Grid';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import type { DashboardPageControls } from '../../types/dashboard';
+import { formatDashboardGlobalDateRange } from '../../utils/dashboardFilters';
 
-export default function AlertsSection() {
+type AlertsSectionProps = {
+  dashboardControls: DashboardPageControls;
+};
+
+export default function AlertsSection({ dashboardControls }: AlertsSectionProps) {
   return (
-    <Stack component="section" id="alerts" spacing={2} sx={{ scrollMarginTop: 144 }}>
+    <Stack
+      component="section"
+      id="alerts"
+      spacing={2}
+      data-refresh-token={dashboardControls.refreshToken}
+      sx={{ scrollMarginTop: 144 }}
+    >
       <Stack spacing={0.5}>
         <Typography component="h2" variant="h5">
           Alertes IP communes
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Structure reservee a la liste des IP partagees et a leur detail inline.
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          Cette zone reutilisera la periode globale :{' '}
+          {formatDashboardGlobalDateRange(dashboardControls.globalDateRange)}
         </Typography>
       </Stack>
       <Grid container spacing={2} columns={12}>

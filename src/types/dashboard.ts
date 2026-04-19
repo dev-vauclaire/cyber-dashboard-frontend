@@ -1,3 +1,5 @@
+import type { Dayjs } from 'dayjs';
+
 export type DashboardOverview = {
   total_attacks: number;
   total_common_ip_alerts: number;
@@ -15,4 +17,14 @@ export type DashboardSectionId =
 export type DashboardSectionLink = {
   id: DashboardSectionId;
   label: string;
+};
+
+export type DashboardGlobalDateRange = {
+  from: Dayjs | null;
+  to: Dayjs | null;
+};
+
+export type DashboardPageControls = {
+  globalDateRange: DashboardGlobalDateRange;
+  refreshToken: number;
 };
