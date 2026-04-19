@@ -1,3 +1,4 @@
+export const PARIS_LOCALE = 'fr-FR';
 export const PARIS_TIME_ZONE = 'Europe/Paris';
 
 const DEFAULT_DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
@@ -10,19 +11,34 @@ const DEFAULT_DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   timeZone: PARIS_TIME_ZONE,
 };
 
+export function isValidUtcDateTime(value: string): boolean {
+  return !Number.isNaN(new Date(value).getTime());
+}
+
 export function formatUtcDateTimeToParis(
   isoDate: string,
   options: Intl.DateTimeFormatOptions = DEFAULT_DATE_TIME_OPTIONS,
 ): string {
-  const date = new Date(isoDate);
-
-  if (Number.isNaN(date.getTime())) {
+  if (!isValidUtcDateTime(isoDate)) {
     return '';
   }
 
-  return date.toLocaleString('fr-FR', {
+  const date = new Date(isoDate);
+
+  return date.toLocaleString(PARIS_LOCALE, {
     ...DEFAULT_DATE_TIME_OPTIONS,
     ...options,
     timeZone: PARIS_TIME_ZONE,
   });
+}
+
+export function formatUtcDateToParis(
+  isoDate: string,
+  options: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  },
+): string {
+  return formatUtcDateTimeToParis(isoDate, options);
 }

@@ -23,6 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment files
+.env.local
+.env.*.local
+!.env.example
+
 # Local-only documents
 README.md
 api_doc.md

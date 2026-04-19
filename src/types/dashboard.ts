@@ -16,9 +16,3 @@ export type DashboardSectionLink = {
   id: DashboardSectionId;
   label: string;
 };
-
-export type SourceColorDescriptor = {
-  sourceId?: number | string;
-  sourceName: string;
-  color?: string | null;
-};

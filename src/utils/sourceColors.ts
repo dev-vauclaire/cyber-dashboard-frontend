@@ -1,4 +1,4 @@
-import type { SourceColorDescriptor } from '../types/dashboard';
+import type { SourceColorInput } from '../types/sources';
 
 const SOURCE_COLOR_PALETTE = [
   '#0F766E',
@@ -22,13 +22,23 @@ function hashLabel(value: string) {
   return Math.abs(hash);
 }
 
-export function getSourceColor({ sourceId, sourceName, color }: SourceColorDescriptor) {
-  if (color != null && color.trim() !== '') {
-    return color;
+function getSourceColorKey({ sourceId, sourceName }: Pick<SourceColorInput, 'sourceId' | 'sourceName'>) {
+  return `${sourceId ?? ''}-${sourceName.trim().toLowerCase()}`;
+}
+
+export function resolveSourceColor({
+  sourceId,
+  sourceName,
+  sourceColor,
+}: SourceColorInput) {
+  if (sourceColor != null && sourceColor.trim() !== '') {
+    return sourceColor;
   }
 
-  const lookupKey = `${sourceId ?? ''}-${sourceName.trim().toLowerCase()}`;
+  const lookupKey = getSourceColorKey({ sourceId, sourceName });
   const paletteIndex = hashLabel(lookupKey) % SOURCE_COLOR_PALETTE.length;
 
   return SOURCE_COLOR_PALETTE[paletteIndex];
 }
+
+export const getSourceColor = resolveSourceColor;
