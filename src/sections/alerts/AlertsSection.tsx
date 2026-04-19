@@ -309,6 +309,8 @@ export default function AlertsSection() {
   });
   const [selectedSources, setSelectedSources] = React.useState<string[]>([]);
   const [expandedIp, setExpandedIp] = React.useState<string | null>(null);
+  const [hasUserTouchedSourceFilter, setHasUserTouchedSourceFilter] =
+    React.useState(false);
 
   const sourceOptions = React.useMemo(
     () => buildSourceOptions(alertsQuery.data?.items ?? []),
@@ -329,10 +331,18 @@ export default function AlertsSection() {
   }, [expandedIp, filteredAlerts]);
 
   React.useEffect(() => {
-    setSelectedSources((currentSelection) =>
-      currentSelection.filter((sourceName) => sourceOptions.includes(sourceName)),
-    );
-  }, [sourceOptions]);
+    setSelectedSources((currentSelection) => {
+      const validSelection = currentSelection.filter((sourceName) =>
+        sourceOptions.includes(sourceName),
+      );
+
+      if (!hasUserTouchedSourceFilter) {
+        return sourceOptions;
+      }
+
+      return validSelection;
+    });
+  }, [hasUserTouchedSourceFilter, sourceOptions]);
 
   function handleToggleDetail(attackerIp: string) {
     setExpandedIp((currentIp) => (currentIp === attackerIp ? null : attackerIp));
@@ -343,6 +353,7 @@ export default function AlertsSection() {
   }
 
   function handleToggleSource(sourceName: string) {
+    setHasUserTouchedSourceFilter(true);
     setSelectedSources((currentSelection) =>
       currentSelection.includes(sourceName)
         ? currentSelection.filter((item) => item !== sourceName)
