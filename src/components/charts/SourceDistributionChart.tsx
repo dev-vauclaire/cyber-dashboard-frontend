@@ -10,7 +10,6 @@ import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgr
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import SourceLegend, { type SourceLegendItem } from './SourceLegend';
 import { useSourceColorContext } from '../../internals/source-colors/SourceColorContext';
 import { getSourceColor } from '../../utils/sourceColors';
 
@@ -93,15 +92,6 @@ function formatPercentage(value: number): string {
     minimumFractionDigits: value % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(value);
-}
-
-function buildLegendItems(items: SourceDistributionItem[]): SourceLegendItem[] {
-  return items.map((item) => ({
-    sourceId: item.sourceId,
-    sourceName: item.sourceName,
-    sourceColor: item.sourceColor,
-    meta: `${formatCount(item.attackCount)} attaques · ${formatPercentage(item.percentage)} %`,
-  }));
 }
 
 export default function SourceDistributionChart({
@@ -225,7 +215,6 @@ export default function SourceDistributionChart({
                 </Stack>
               );
             })}
-            <SourceLegend items={buildLegendItems(items)} />
           </Stack>
         ) : null}
       </CardContent>

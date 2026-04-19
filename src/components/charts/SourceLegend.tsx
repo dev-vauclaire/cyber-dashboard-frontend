@@ -19,10 +19,7 @@ export default function SourceLegend({ items }: SourceLegendProps) {
   const { sourceColorRegistry } = useSourceColorContext();
 
   return (
-    <Stack
-      direction="row"
-      sx={{ flexWrap: 'wrap', gap: 1.5, pt: 2 }}
-    >
+    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1.5, pt: 2 }}>
       {items.map((item) => {
         const color = getSourceColor({
           sourceId: item.sourceId,

@@ -78,13 +78,6 @@ function normalizeLocalDateRange(
   };
 }
 
-function formatLocalDateRange(localDateRange: ChartsLocalDateRange): string {
-  const fromLabel = localDateRange.from?.format('DD/MM/YYYY') ?? 'non definie';
-  const toLabel = localDateRange.to?.format('DD/MM/YYYY') ?? 'non definie';
-
-  return `${fromLabel} -> ${toLabel}`;
-}
-
 function buildAttackStatsDateRangeQuery(
   localDateRange: ChartsLocalDateRange,
 ): AttackStatsDateRangeQuery | null {
@@ -203,9 +196,6 @@ export default function ChartsSection() {
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Evolution temporelle et repartition des attaques par source.
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Periode locale selectionnee : {formatLocalDateRange(localDateRange)}
           </Typography>
         </Stack>
         <Stack
