@@ -1,9 +1,13 @@
 import * as React from 'react';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import CustomDatePicker from '../../components/filters/CustomDatePicker';
 import LinearChart from '../../components/charts/LinearChart';
 import SourceDistributionChart from '../../components/charts/SourceDistributionChart';
 import { fetchAttacksBySource, fetchAttacksBySourceTimeseries } from '../../api/stats';
@@ -15,8 +19,8 @@ import type {
 import { formatDateToParisDayLabel } from '../../utils/dateUtils';
 
 type ChartsLocalDateRange = {
-  from: Dayjs;
-  to: Dayjs;
+  from: Dayjs | null;
+  to: Dayjs | null;
 };
 
 function createDefaultChartsDateRange(): ChartsLocalDateRange {
@@ -28,13 +32,66 @@ function createDefaultChartsDateRange(): ChartsLocalDateRange {
   };
 }
 
+function normalizeLocalDateRange(
+  currentRange: ChartsLocalDateRange,
+  field: 'from' | 'to',
+  nextValue: Dayjs | null,
+): ChartsLocalDateRange {
+  if (field === 'from') {
+    if (nextValue == null) {
+      return {
+        ...currentRange,
+        from: null,
+      };
+    }
+
+    if (currentRange.to != null && nextValue.isAfter(currentRange.to, 'day')) {
+      return {
+        from: nextValue,
+        to: nextValue,
+      };
+    }
+
+    return {
+      ...currentRange,
+      from: nextValue,
+    };
+  }
+
+  if (nextValue == null) {
+    return {
+      ...currentRange,
+      to: null,
+    };
+  }
+
+  if (currentRange.from != null && nextValue.isBefore(currentRange.from, 'day')) {
+    return {
+      from: nextValue,
+      to: nextValue,
+    };
+  }
+
+  return {
+    ...currentRange,
+    to: nextValue,
+  };
+}
+
 function formatLocalDateRange(localDateRange: ChartsLocalDateRange): string {
-  return `${localDateRange.from.format('DD/MM/YYYY')} -> ${localDateRange.to.format('DD/MM/YYYY')}`;
+  const fromLabel = localDateRange.from?.format('DD/MM/YYYY') ?? 'non definie';
+  const toLabel = localDateRange.to?.format('DD/MM/YYYY') ?? 'non definie';
+
+  return `${fromLabel} -> ${toLabel}`;
 }
 
 function buildAttackStatsDateRangeQuery(
   localDateRange: ChartsLocalDateRange,
-): AttackStatsDateRangeQuery {
+): AttackStatsDateRangeQuery | null {
+  if (localDateRange.from == null || localDateRange.to == null) {
+    return null;
+  }
+
   const fromDate = localDateRange.from.format('YYYY-MM-DD');
   const toDate = localDateRange.to.format('YYYY-MM-DD');
 
@@ -94,33 +151,95 @@ function buildSourceDistributionData(data: AttacksBySourceResponse | undefined) 
 }
 
 export default function ChartsSection() {
-  const localDateRange = React.useMemo(() => createDefaultChartsDateRange(), []);
+  const [localDateRange, setLocalDateRange] = React.useState<ChartsLocalDateRange>(() =>
+    createDefaultChartsDateRange(),
+  );
+  const [refreshToken, setRefreshToken] = React.useState(0);
   const dateRangeQuery = buildAttackStatsDateRangeQuery(localDateRange);
   const timelineQuery = useQuery({
-    queryFn: () => fetchAttacksBySourceTimeseries(dateRangeQuery),
-    queryKey: ['chartsTimeline', dateRangeQuery.from, dateRangeQuery.to],
+    queryFn: () => fetchAttacksBySourceTimeseries(dateRangeQuery!),
+    queryKey: [
+      'chartsTimeline',
+      dateRangeQuery?.from ?? null,
+      dateRangeQuery?.to ?? null,
+      refreshToken,
+    ],
+    enabled: dateRangeQuery != null,
   });
   const sourceDistributionQuery = useQuery({
-    queryFn: () => fetchAttacksBySource(dateRangeQuery),
-    queryKey: ['chartsBySource', dateRangeQuery.from, dateRangeQuery.to],
+    queryFn: () => fetchAttacksBySource(dateRangeQuery!),
+    queryKey: [
+      'chartsBySource',
+      dateRangeQuery?.from ?? null,
+      dateRangeQuery?.to ?? null,
+      refreshToken,
+    ],
+    enabled: dateRangeQuery != null,
   });
 
   const timelineChartData = buildTimelineChartData(timelineQuery.data);
   const sourceDistributionData = buildSourceDistributionData(sourceDistributionQuery.data);
+  const isDateRangeIncomplete = localDateRange.from == null || localDateRange.to == null;
+
+  function handleDateChange(field: 'from' | 'to', value: Dayjs | null) {
+    setLocalDateRange((currentRange) =>
+      normalizeLocalDateRange(currentRange, field, value),
+    );
+  }
+
+  function handleRefresh() {
+    setRefreshToken((currentToken) => currentToken + 1);
+  }
 
   return (
     <Stack component="section" id="charts" spacing={2} sx={{ scrollMarginTop: 144 }}>
-      <Stack spacing={0.5}>
-        <Typography component="h2" variant="h5">
-          Graphiques
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Evolution temporelle et repartition des attaques par source.
-        </Typography>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Periode par defaut : {formatLocalDateRange(localDateRange)}
-        </Typography>
+      <Stack
+        direction={{ xs: 'column', lg: 'row' }}
+        sx={{ justifyContent: 'space-between', gap: 2, alignItems: { lg: 'flex-start' } }}
+      >
+        <Stack spacing={0.5}>
+          <Typography component="h2" variant="h5">
+            Graphiques
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Evolution temporelle et repartition des attaques par source.
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Periode locale selectionnee : {formatLocalDateRange(localDateRange)}
+          </Typography>
+        </Stack>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          sx={{ gap: 1, alignItems: { xs: 'stretch', sm: 'center' }, flexWrap: 'wrap' }}
+        >
+          <CustomDatePicker
+            label="Du"
+            value={localDateRange.from}
+            onChange={(value) => handleDateChange('from', value)}
+            maxDate={localDateRange.to}
+          />
+          <CustomDatePicker
+            label="Au"
+            value={localDateRange.to}
+            onChange={(value) => handleDateChange('to', value)}
+            minDate={localDateRange.from}
+          />
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<RefreshRoundedIcon fontSize="small" />}
+            onClick={handleRefresh}
+          >
+            Rafraîchir
+          </Button>
+        </Stack>
       </Stack>
+      {isDateRangeIncomplete ? (
+        <Alert severity="info">
+          Selectionne une periode complete dans cette section pour charger les donnees
+          d&apos;analyse.
+        </Alert>
+      ) : null}
       <Grid container spacing={2} columns={12}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <LinearChart
