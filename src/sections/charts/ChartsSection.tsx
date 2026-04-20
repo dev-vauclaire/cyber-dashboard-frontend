@@ -16,7 +16,10 @@ import type {
   AttacksBySourceResponse,
   AttacksBySourceTimeseriesResponse,
 } from '../../types/stats';
-import { formatDateToParisDayLabel } from '../../utils/dateUtils';
+import {
+  buildParisDayBoundaryUtcIso,
+  formatDateToParisDayLabel,
+} from '../../utils/dateUtils';
 
 type ChartsLocalDateRange = {
   from: Dayjs | null;
@@ -85,12 +88,9 @@ function buildAttackStatsDateRangeQuery(
     return null;
   }
 
-  const fromDate = localDateRange.from.format('YYYY-MM-DD');
-  const toDate = localDateRange.to.format('YYYY-MM-DD');
-
   return {
-    from: `${fromDate}T00:00:00Z`,
-    to: `${toDate}T23:59:59Z`,
+    from: buildParisDayBoundaryUtcIso(localDateRange.from, 'start'),
+    to: buildParisDayBoundaryUtcIso(localDateRange.to, 'end'),
   };
 }
 

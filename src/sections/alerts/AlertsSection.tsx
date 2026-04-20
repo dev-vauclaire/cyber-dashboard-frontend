@@ -28,20 +28,8 @@ import type {
   CommonIpAlertDetail,
   CommonIpAlertListItem,
 } from '../../types/alerts';
-import { formatUtcDateTimeToParis } from '../../utils/dateUtils';
+import { formatDate } from '../../utils/dateUtils';
 import { getSourceColor } from '../../utils/sourceColors';
-
-const TABLE_DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-};
-
-function formatAlertDateTime(isoDate: string): string {
-  return formatUtcDateTimeToParis(isoDate, TABLE_DATE_TIME_OPTIONS);
-}
 
 function buildSourceOptions(items: CommonIpAlertListItem[]): string[] {
   const uniqueSources = new Set<string>();
@@ -234,8 +222,8 @@ function AlertDetailContent({ attackerIp, refreshToken }: AlertDetailContentProp
                     <Typography variant="body2">{source.source_name}</Typography>
                   </Stack>
                 </TableCell>
-                <TableCell>{formatAlertDateTime(source.first_seen_at)}</TableCell>
-                <TableCell>{formatAlertDateTime(source.last_seen_at)}</TableCell>
+                <TableCell>{formatDate(source.first_seen_at)}</TableCell>
+                <TableCell>{formatDate(source.last_seen_at)}</TableCell>
                 <TableCell align="right">{source.hit_count}</TableCell>
               </TableRow>
             );
@@ -279,8 +267,8 @@ function CommonIpAlertRow({
             label={formatSourceCount(alert.associated_sources.length)}
           />
         </TableCell>
-        <TableCell>{formatAlertDateTime(alert.first_seen_at)}</TableCell>
-        <TableCell>{formatAlertDateTime(alert.last_seen_at)}</TableCell>
+        <TableCell>{formatDate(alert.first_seen_at)}</TableCell>
+        <TableCell>{formatDate(alert.last_seen_at)}</TableCell>
       </TableRow>
       <TableRow>
         <TableCell sx={{ py: 0 }} colSpan={5}>

@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import type {
   PatchSourceActiveStatusPayload,
+  PatchSourceColorPayload,
   PatchSourceNamePayload,
   SourceInventoryResponse,
   SourcesListResponse,
@@ -28,6 +29,15 @@ export async function patchSourceActiveStatus(
   payload: PatchSourceActiveStatusPayload,
 ): Promise<void> {
   await apiClient.patch(`/api/sources/${sourceId}/is_active`, {
+    body: payload,
+  });
+}
+
+export async function patchSourceColor(
+  sourceId: number,
+  payload: PatchSourceColorPayload,
+): Promise<void> {
+  await apiClient.patch(`/api/sources/${sourceId}/color`, {
     body: payload,
   });
 }

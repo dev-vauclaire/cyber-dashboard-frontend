@@ -34,6 +34,10 @@ export type PatchSourceActiveStatusPayload = {
   is_active: boolean;
 };
 
+export type PatchSourceColorPayload = {
+  color: string;
+};
+
 export type SourceColorInput = {
   sourceId?: number | string;
   sourceName: string;
