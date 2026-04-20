@@ -7,7 +7,7 @@ import type {
 } from '../types/sources';
 
 export async function fetchSources(): Promise<SourcesListResponse> {
-  return apiClient.get<SourcesListResponse>('/api/sources/');
+  return apiClient.get<SourcesListResponse>('/api/sources');
 }
 
 export async function fetchSourceInventory(): Promise<SourceInventoryResponse> {

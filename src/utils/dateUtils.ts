@@ -1,46 +1,52 @@
+import type { Dayjs } from 'dayjs';
+
 export const PARIS_LOCALE = 'fr-FR';
 export const PARIS_TIME_ZONE = 'Europe/Paris';
 
-const DEFAULT_DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+const PARIS_DATE_TIME_FORMATTER = new Intl.DateTimeFormat(PARIS_LOCALE, {
   day: '2-digit',
   month: '2-digit',
-  year: '2-digit',
+  year: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
   second: '2-digit',
   timeZone: PARIS_TIME_ZONE,
-};
+  hourCycle: 'h23',
+});
 
-export function isValidUtcDateTime(value: string): boolean {
-  return !Number.isNaN(new Date(value).getTime());
+function parseDate(value: string | null | undefined): Date | null {
+  if (value == null || value.trim() === '') {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function formatUtcDateTimeToParis(
-  isoDate: string,
-  options: Intl.DateTimeFormatOptions = DEFAULT_DATE_TIME_OPTIONS,
-): string {
-  if (!isValidUtcDateTime(isoDate)) {
+function getDateTimePart(
+  parts: Intl.DateTimeFormatPart[],
+  type: Intl.DateTimeFormatPartTypes,
+) {
+  return parts.find((part) => part.type === type)?.value ?? '';
+}
+
+export function formatDate(dateString: string | null | undefined): string {
+  const date = parseDate(dateString);
+
+  if (date == null) {
     return '';
   }
 
-  const date = new Date(isoDate);
+  const parts = PARIS_DATE_TIME_FORMATTER.formatToParts(date);
+  const day = getDateTimePart(parts, 'day');
+  const month = getDateTimePart(parts, 'month');
+  const year = getDateTimePart(parts, 'year');
+  const hour = getDateTimePart(parts, 'hour');
+  const minute = getDateTimePart(parts, 'minute');
+  const second = getDateTimePart(parts, 'second');
 
-  return date.toLocaleString(PARIS_LOCALE, {
-    ...DEFAULT_DATE_TIME_OPTIONS,
-    ...options,
-    timeZone: PARIS_TIME_ZONE,
-  });
-}
-
-export function formatUtcDateToParis(
-  isoDate: string,
-  options: Intl.DateTimeFormatOptions = {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  },
-): string {
-  return formatUtcDateTimeToParis(isoDate, options);
+  return `${day}/${month}/${year} ${hour}:${minute}:${second}`;
 }
 
 function normalizeDateInput(value: Date | string): Date {
@@ -59,4 +65,64 @@ export function formatDateToParisDayLabel(value: Date | string): string {
     day: '2-digit',
     month: 'short',
   });
+}
+
+function parseTimeZoneOffsetMinutes(value: string): number {
+  if (value === 'GMT' || value === 'UTC') {
+    return 0;
+  }
+
+  const match = value.match(/(?:GMT|UTC)([+-])(\d{1,2})(?::?(\d{2}))?/);
+
+  if (match == null) {
+    return 0;
+  }
+
+  const [, sign, hours, minutes] = match;
+  const totalMinutes = Number(hours) * 60 + Number(minutes ?? '0');
+
+  return sign === '-' ? -totalMinutes : totalMinutes;
+}
+
+function getTimeZoneOffsetMinutes(date: Date, timeZone: string): number {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    timeZoneName: 'shortOffset',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+  const timeZoneName =
+    formatter.formatToParts(date).find((part) => part.type === 'timeZoneName')?.value ??
+    'GMT';
+
+  return parseTimeZoneOffsetMinutes(timeZoneName);
+}
+
+export function buildParisDayBoundaryUtcIso(
+  value: Dayjs,
+  boundary: 'start' | 'end',
+): string {
+  const hours = boundary === 'start' ? 0 : 23;
+  const minutes = boundary === 'start' ? 0 : 59;
+  const seconds = boundary === 'start' ? 0 : 59;
+  const milliseconds = boundary === 'start' ? 0 : 999;
+  const utcGuess = new Date(
+    Date.UTC(
+      value.year(),
+      value.month(),
+      value.date(),
+      hours,
+      minutes,
+      seconds,
+      milliseconds,
+    ),
+  );
+  const offsetMinutes = getTimeZoneOffsetMinutes(utcGuess, PARIS_TIME_ZONE);
+
+  return new Date(utcGuess.getTime() - offsetMinutes * 60 * 1000).toISOString();
 }

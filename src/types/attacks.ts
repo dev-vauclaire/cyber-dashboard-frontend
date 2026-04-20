@@ -8,7 +8,7 @@ export type AttackRecord = {
   attacker_ip: string;
   occurred_at: IsoUtcDateTimeString;
   collected_at: IsoUtcDateTimeString;
-  attack_type: string;
+  attack_type: string | null;
 };
 
 export type PaginatedAttacksResponse = {

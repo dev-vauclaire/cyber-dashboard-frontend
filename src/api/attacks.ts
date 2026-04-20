@@ -4,7 +4,7 @@ import type { PaginatedAttacksQuery, PaginatedAttacksResponse } from '../types/a
 export async function fetchAttacks(
   query?: PaginatedAttacksQuery,
 ): Promise<PaginatedAttacksResponse> {
-  return apiClient.get<PaginatedAttacksResponse>('/api/attacks/', {
+  return apiClient.get<PaginatedAttacksResponse>('/api/attacks', {
     query,
   });
 }

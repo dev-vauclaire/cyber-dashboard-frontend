@@ -1,22 +1,60 @@
-import { DataGrid } from '@mui/x-data-grid';
-import { columns, rows } from '../../internals/data/gridData';
+import {
+  DataGrid,
+  type DataGridProps,
+  type GridColDef,
+  type GridPaginationModel,
+  type GridRowsProp,
+} from '@mui/x-data-grid';
+import type { SxProps, Theme } from '@mui/material/styles';
 
-export default function CustomizedDataGrid() {
+type CustomizedDataGridProps = {
+  columns: GridColDef[];
+  rows: GridRowsProp;
+  isLoading?: boolean;
+  rowCount?: number;
+  paginationModel?: GridPaginationModel;
+  onPaginationModelChange?: DataGridProps['onPaginationModelChange'];
+  onRowClick?: DataGridProps['onRowClick'];
+  pageSizeOptions?: number[];
+  sx?: SxProps<Theme>;
+};
+
+export default function CustomizedDataGrid({
+  columns,
+  rows,
+  isLoading = false,
+  rowCount = 0,
+  paginationModel,
+  onPaginationModelChange,
+  onRowClick,
+  pageSizeOptions = [10, 20, 50],
+  sx,
+}: CustomizedDataGridProps) {
   return (
     <DataGrid
       rows={rows}
       columns={columns}
+      loading={isLoading}
+      rowCount={rowCount}
+      pagination
+      paginationMode="server"
+      paginationModel={paginationModel}
+      onPaginationModelChange={onPaginationModelChange}
+      onRowClick={onRowClick}
       getRowClassName={(params) =>
         params.indexRelativeToCurrentPage % 2 === 0 ? 'even' : 'odd'
       }
-      initialState={{
-        pagination: { paginationModel: { pageSize: 10 } },
-      }}
-      pageSizeOptions={[10, 20, 50]}
+      pageSizeOptions={pageSizeOptions}
       disableColumnResize
       disableRowSelectionOnClick
       density="compact"
-      sx={{ minHeight: 440, border: 0 }}
+      sx={[
+        {
+          minHeight: 520,
+          border: 0,
+        },
+        ...(Array.isArray(sx) ? sx : sx == null ? [] : [sx]),
+      ]}
       slotProps={{
         filterPanel: {
           filterFormProps: {
