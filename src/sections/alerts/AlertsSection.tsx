@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
@@ -294,6 +294,7 @@ export default function AlertsSection() {
   const alertsQuery = useQuery({
     queryKey: ['commonIpAlerts', refreshToken],
     queryFn: fetchCommonIpAlerts,
+    placeholderData: keepPreviousData,
   });
   const [selectedSources, setSelectedSources] = React.useState<string[]>([]);
   const [expandedIp, setExpandedIp] = React.useState<string | null>(null);
@@ -337,6 +338,8 @@ export default function AlertsSection() {
   }
 
   function handleRefresh() {
+    setHasUserTouchedSourceFilter(false);
+    setSelectedSources(sourceOptions);
     setRefreshToken((currentToken) => currentToken + 1);
   }
 
