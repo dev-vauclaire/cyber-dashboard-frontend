@@ -1,14 +1,20 @@
 import { apiClient } from './client';
-import type { CommonIpAlertDetail, CommonIpAlertsListResponse } from '../types/alerts';
+import type {
+  CommonIpAlertDetail,
+  CommonIpAlertsListResponse,
+  CommonIpAlertsQuery,
+} from '../types/alerts';
 
-export async function fetchCommonIpAlerts(): Promise<CommonIpAlertsListResponse> {
-  return apiClient.get<CommonIpAlertsListResponse>('/api/alerts/common-ips');
+export async function fetchCommonIpAlerts(
+  query?: CommonIpAlertsQuery,
+): Promise<CommonIpAlertsListResponse> {
+  return apiClient.get<CommonIpAlertsListResponse>('/api/alerts/common-ips', {
+    query,
+  });
 }
 
 export async function fetchCommonIpAlertDetail(
-  ipAddress: string,
+  alertId: number,
 ): Promise<CommonIpAlertDetail> {
-  return apiClient.get<CommonIpAlertDetail>(
-    `/api/alerts/common-ips/${encodeURIComponent(ipAddress)}`,
-  );
+  return apiClient.get<CommonIpAlertDetail>(`/api/alerts/common-ips/${alertId}`);
 }

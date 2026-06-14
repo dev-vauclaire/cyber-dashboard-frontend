@@ -1,4 +1,10 @@
-type ApiQueryValue = string | number | boolean | null | undefined;
+type ApiQueryPrimitiveValue = string | number | boolean;
+
+type ApiQueryValue =
+  | ApiQueryPrimitiveValue
+  | readonly ApiQueryPrimitiveValue[]
+  | null
+  | undefined;
 
 type ApiQueryParams = Record<string, ApiQueryValue>;
 
@@ -31,6 +37,13 @@ function buildQueryString(query?: ApiQueryParams): string {
 
   Object.entries(query).forEach(([key, value]) => {
     if (value == null || value === '') {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        searchParams.append(key, String(item));
+      });
       return;
     }
 

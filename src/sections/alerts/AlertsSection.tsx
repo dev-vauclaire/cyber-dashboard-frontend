@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { type Dayjs } from 'dayjs';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
@@ -8,10 +9,17 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
+import FormControl from '@mui/material/FormControl';
+import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
+import InputLabel from '@mui/material/InputLabel';
+import ListItemText from '@mui/material/ListItemText';
+import MenuItem from '@mui/material/MenuItem';
+import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
@@ -19,41 +27,150 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { alpha } from '@mui/material/styles';
 import { fetchCommonIpAlertDetail, fetchCommonIpAlerts } from '../../api/alerts';
+import { fetchSources } from '../../api/sources';
+import CustomDatePicker from '../../components/filters/CustomDatePicker';
 import { useSourceColorContext } from '../../internals/source-colors/SourceColorContext';
 import type {
   CommonIpAlertDetail,
   CommonIpAlertListItem,
+  CommonIpAlertsQuery,
 } from '../../types/alerts';
-import { formatDate } from '../../utils/dateUtils';
+import type { Source } from '../../types/sources';
+import { buildParisDayBoundaryUtcIso, formatDate } from '../../utils/dateUtils';
 import { getSourceColor } from '../../utils/sourceColors';
 
-function buildSourceOptions(items: CommonIpAlertListItem[]): string[] {
-  const uniqueSources = new Set<string>();
+type AlertsLocalDateRange = {
+  from: Dayjs | null;
+  to: Dayjs | null;
+};
 
-  items.forEach((item) => {
-    item.associated_sources.forEach((sourceName) => {
-      uniqueSources.add(sourceName);
-    });
-  });
+type AlertsLocalFilters = {
+  sourceIds: string[];
+  dateRange: AlertsLocalDateRange;
+  minDistinctSourceCount: string;
+};
 
-  return Array.from(uniqueSources).sort((left, right) => left.localeCompare(right, 'fr'));
-}
+type AlertPaginationModel = {
+  page: number;
+  pageSize: number;
+};
 
-function filterAlerts(
-  items: CommonIpAlertListItem[],
-  selectedSources: string[],
-): CommonIpAlertListItem[] {
-  if (selectedSources.length === 0) {
-    return [];
+type SourceOption = {
+  value: string;
+  label: string;
+  color: string;
+};
+
+const DEFAULT_PAGINATION_MODEL: AlertPaginationModel = {
+  page: 0,
+  pageSize: 20,
+};
+
+const EMPTY_FILTERS: AlertsLocalFilters = {
+  sourceIds: [],
+  dateRange: {
+    from: null,
+    to: null,
+  },
+  minDistinctSourceCount: '',
+};
+
+function normalizeLocalDateRange(
+  currentRange: AlertsLocalDateRange,
+  field: 'from' | 'to',
+  nextValue: Dayjs | null,
+): AlertsLocalDateRange {
+  if (field === 'from') {
+    if (nextValue == null) {
+      return {
+        ...currentRange,
+        from: null,
+      };
+    }
+
+    if (currentRange.to != null && nextValue.isAfter(currentRange.to, 'day')) {
+      return {
+        from: nextValue,
+        to: nextValue,
+      };
+    }
+
+    return {
+      ...currentRange,
+      from: nextValue,
+    };
   }
 
-  return items.filter((item) =>
-    selectedSources.some((sourceName) => item.associated_sources.includes(sourceName)),
-  );
+  if (nextValue == null) {
+    return {
+      ...currentRange,
+      to: null,
+    };
+  }
+
+  if (currentRange.from != null && nextValue.isBefore(currentRange.from, 'day')) {
+    return {
+      from: nextValue,
+      to: nextValue,
+    };
+  }
+
+  return {
+    ...currentRange,
+    to: nextValue,
+  };
+}
+
+function buildCommonIpAlertsQuery(
+  filters: AlertsLocalFilters,
+  paginationModel: AlertPaginationModel,
+): CommonIpAlertsQuery {
+  const query: CommonIpAlertsQuery = {
+    page: paginationModel.page + 1,
+    limit: paginationModel.pageSize,
+  };
+
+  if (filters.sourceIds.length > 0) {
+    query.source_id = filters.sourceIds.map((sourceId) => Number(sourceId));
+  }
+
+  if (filters.dateRange.from != null) {
+    query.from = buildParisDayBoundaryUtcIso(filters.dateRange.from, 'start');
+  }
+
+  if (filters.dateRange.to != null) {
+    query.to = buildParisDayBoundaryUtcIso(filters.dateRange.to, 'end');
+  }
+
+  if (filters.minDistinctSourceCount !== '') {
+    query.min_distinct_source_count = Number(filters.minDistinctSourceCount);
+  }
+
+  return query;
+}
+
+function buildSourceOptions(
+  sources: Source[],
+  sourceColorRegistry: ReturnType<typeof useSourceColorContext>['sourceColorRegistry'],
+): SourceOption[] {
+  return sources
+    .slice()
+    .sort((left, right) => left.source_name.localeCompare(right.source_name, 'fr'))
+    .map((source) => ({
+      value: String(source.source_id),
+      label: source.source_name,
+      color: getSourceColor({
+        sourceId: source.source_id,
+        sourceName: source.source_name,
+        sourceColor: source.color,
+        sourceColorRegistry,
+      }),
+    }));
 }
 
 function formatSourceCount(value: number): string {
@@ -70,6 +187,53 @@ function buildDetailSummary(detail: CommonIpAlertDetail | undefined): string {
   return `${detail.sources.length} source${detail.sources.length > 1 ? 's' : ''} · ${totalHits} hit${totalHits > 1 ? 's' : ''}`;
 }
 
+function SourceOptionLabel({
+  color,
+  label,
+  noWrap = true,
+}: {
+  color: string;
+  label: string;
+  noWrap?: boolean;
+}) {
+  return (
+    <Stack direction="row" sx={{ alignItems: 'center', gap: 1, minWidth: 0 }}>
+      <Box
+        sx={{
+          width: 10,
+          height: 10,
+          borderRadius: '999px',
+          backgroundColor: color,
+          flexShrink: 0,
+        }}
+      />
+      <Typography variant="body2" noWrap={noWrap} title={label}>
+        {label}
+      </Typography>
+    </Stack>
+  );
+}
+
+function formatSelectedSources(sourceIds: string[], sourceOptions: SourceOption[]) {
+  if (sourceIds.length === 0) {
+    return 'Toutes les sources';
+  }
+
+  const selectedLabels = sourceIds
+    .map((sourceId) => sourceOptions.find((option) => option.value === sourceId)?.label)
+    .filter((label): label is string => label != null);
+
+  if (selectedLabels.length === 0) {
+    return `${sourceIds.length} source${sourceIds.length > 1 ? 's' : ''}`;
+  }
+
+  if (selectedLabels.length <= 2) {
+    return selectedLabels.join(', ');
+  }
+
+  return `${selectedLabels.length} sources selectionnees`;
+}
+
 function LoadingTableState() {
   return (
     <Stack spacing={1.25} sx={{ pt: 1 }}>
@@ -81,81 +245,22 @@ function LoadingTableState() {
   );
 }
 
-type SourceFilterChipsProps = {
-  selectedSources: string[];
-  sourceOptions: string[];
-  onToggleSource: (sourceName: string) => void;
-};
-
-function SourceFilterChips({
-  selectedSources,
-  sourceOptions,
-  onToggleSource,
-}: SourceFilterChipsProps) {
-  const { sourceColorRegistry } = useSourceColorContext();
-
-  if (sourceOptions.length === 0) {
-    return null;
-  }
-
-  return (
-    <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-      {sourceOptions.map((sourceName) => {
-        const isSelected = selectedSources.includes(sourceName);
-        const color = getSourceColor({
-          sourceName,
-          sourceColorRegistry,
-        });
-
-        return (
-          <Chip
-            key={sourceName}
-            label={sourceName}
-            clickable
-            onClick={() => onToggleSource(sourceName)}
-            variant={isSelected ? 'filled' : 'outlined'}
-            sx={(theme) => ({
-              borderWidth: 1,
-              borderStyle: 'solid',
-              borderColor: color,
-              color: isSelected ? theme.palette.getContrastText(color) : color,
-              backgroundColor: isSelected ? `${color} !important` : 'transparent',
-              '&.MuiChip-filled': {
-                backgroundColor: `${color} !important`,
-                color: `${theme.palette.getContrastText(color)} !important`,
-              },
-              '&.MuiChip-clickable:hover': {
-                backgroundColor: isSelected
-                  ? `${color} !important`
-                  : alpha(color, 0.12),
-              },
-              '&.MuiChip-clickable:focusVisible': {
-                backgroundColor: isSelected
-                  ? `${color} !important`
-                  : alpha(color, 0.18),
-              },
-              '& .MuiChip-label': {
-                fontWeight: 500,
-              },
-            })}
-          />
-        );
-      })}
-    </Stack>
-  );
-}
-
 type AlertDetailContentProps = {
+  alertId: number;
   attackerIp: string;
   refreshToken: number;
 };
 
-function AlertDetailContent({ attackerIp, refreshToken }: AlertDetailContentProps) {
+function AlertDetailContent({
+  alertId,
+  attackerIp,
+  refreshToken,
+}: AlertDetailContentProps) {
   const { sourceColorRegistry } = useSourceColorContext();
   const detailQuery = useQuery({
-    queryKey: ['commonIpAlertDetail', attackerIp, refreshToken],
-    queryFn: () => fetchCommonIpAlertDetail(attackerIp),
-    enabled: attackerIp !== '',
+    queryKey: ['commonIpAlertDetail', alertId, refreshToken],
+    queryFn: () => fetchCommonIpAlertDetail(alertId),
+    enabled: alertId > 0,
   });
 
   if (detailQuery.isLoading) {
@@ -179,7 +284,7 @@ function AlertDetailContent({ attackerIp, refreshToken }: AlertDetailContentProp
   if (detailQuery.data == null || detailQuery.data.sources.length === 0) {
     return (
       <Alert severity="info" sx={{ mt: 1 }}>
-        Aucun detail source n&apos;est disponible pour cette IP.
+        Aucun detail source n&apos;est disponible pour cette alerte.
       </Alert>
     );
   }
@@ -207,7 +312,7 @@ function AlertDetailContent({ attackerIp, refreshToken }: AlertDetailContentProp
             });
 
             return (
-              <TableRow key={`${attackerIp}-${source.source_id}`}>
+              <TableRow key={`${alertId}-${source.source_id}`}>
                 <TableCell>
                   <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
                     <Box
@@ -237,7 +342,7 @@ function AlertDetailContent({ attackerIp, refreshToken }: AlertDetailContentProp
 type CommonIpAlertRowProps = {
   alert: CommonIpAlertListItem;
   isExpanded: boolean;
-  onToggle: (attackerIp: string) => void;
+  onToggle: (alertId: number) => void;
   refreshToken: number;
 };
 
@@ -254,30 +359,32 @@ function CommonIpAlertRow({
           <IconButton
             size="small"
             aria-label={isExpanded ? 'Replier le detail' : 'Afficher le detail'}
-            onClick={() => onToggle(alert.attacker_ip)}
+            onClick={() => onToggle(alert.id)}
           >
             {isExpanded ? <KeyboardArrowUpRoundedIcon /> : <KeyboardArrowDownRoundedIcon />}
           </IconButton>
         </TableCell>
+        <TableCell>{alert.id}</TableCell>
         <TableCell sx={{ fontFamily: 'monospace' }}>{alert.attacker_ip}</TableCell>
         <TableCell>
           <Chip
             size="small"
             variant="outlined"
-            label={formatSourceCount(alert.associated_sources.length)}
+            label={formatSourceCount(alert.distinct_source_count)}
           />
         </TableCell>
         <TableCell>{formatDate(alert.first_seen_at)}</TableCell>
         <TableCell>{formatDate(alert.last_seen_at)}</TableCell>
       </TableRow>
       <TableRow>
-        <TableCell sx={{ py: 0 }} colSpan={5}>
+        <TableCell sx={{ py: 0 }} colSpan={6}>
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <Box sx={{ px: 2, py: 1 }}>
               <Typography component="h4" variant="subtitle2">
-                Detail de l&apos;alerte {alert.attacker_ip}
+                Detail de l&apos;alerte #{alert.id} · {alert.attacker_ip}
               </Typography>
               <AlertDetailContent
+                alertId={alert.id}
                 attackerIp={alert.attacker_ip}
                 refreshToken={refreshToken}
               />
@@ -290,69 +397,105 @@ function CommonIpAlertRow({
 }
 
 export default function AlertsSection() {
+  const { sourceColorRegistry } = useSourceColorContext();
   const [refreshToken, setRefreshToken] = React.useState(0);
+  const [filters, setFilters] = React.useState<AlertsLocalFilters>(EMPTY_FILTERS);
+  const [paginationModel, setPaginationModel] =
+    React.useState<AlertPaginationModel>(DEFAULT_PAGINATION_MODEL);
+  const [expandedAlertId, setExpandedAlertId] = React.useState<number | null>(null);
+
+  const sourcesQuery = useQuery({
+    queryKey: ['sourcesColorRegistry'],
+    queryFn: fetchSources,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const alertsQueryParams = React.useMemo(
+    () => buildCommonIpAlertsQuery(filters, paginationModel),
+    [filters, paginationModel],
+  );
+
   const alertsQuery = useQuery({
-    queryKey: ['commonIpAlerts', refreshToken],
-    queryFn: fetchCommonIpAlerts,
+    queryKey: ['commonIpAlerts', alertsQueryParams, refreshToken],
+    queryFn: () => fetchCommonIpAlerts(alertsQueryParams),
     placeholderData: keepPreviousData,
   });
-  const [selectedSources, setSelectedSources] = React.useState<string[]>([]);
-  const [expandedIp, setExpandedIp] = React.useState<string | null>(null);
-  const [hasUserTouchedSourceFilter, setHasUserTouchedSourceFilter] =
-    React.useState(false);
 
   const sourceOptions = React.useMemo(
-    () => buildSourceOptions(alertsQuery.data?.items ?? []),
+    () => buildSourceOptions(sourcesQuery.data?.items ?? [], sourceColorRegistry),
+    [sourceColorRegistry, sourcesQuery.data],
+  );
+  const rows = React.useMemo(
+    () => alertsQuery.data?.items ?? [],
     [alertsQuery.data],
   );
-  const filteredAlerts = React.useMemo(
-    () => filterAlerts(alertsQuery.data?.items ?? [], selectedSources),
-    [alertsQuery.data, selectedSources],
-  );
+  const totalItems = alertsQuery.data?.pagination.total_items ?? 0;
+  const isTableLoading = alertsQuery.isPending || alertsQuery.isFetching;
 
   React.useEffect(() => {
-    if (
-      expandedIp != null &&
-      !filteredAlerts.some((item) => item.attacker_ip === expandedIp)
-    ) {
-      setExpandedIp(null);
+    if (expandedAlertId != null && !rows.some((item) => item.id === expandedAlertId)) {
+      setExpandedAlertId(null);
     }
-  }, [expandedIp, filteredAlerts]);
+  }, [expandedAlertId, rows]);
 
-  React.useEffect(() => {
-    setSelectedSources((currentSelection) => {
-      const validSelection = currentSelection.filter((sourceName) =>
-        sourceOptions.includes(sourceName),
-      );
+  function resetPage() {
+    setPaginationModel((currentPaginationModel) => ({
+      ...currentPaginationModel,
+      page: 0,
+    }));
+  }
 
-      if (!hasUserTouchedSourceFilter) {
-        return sourceOptions;
-      }
+  function handleSourceFilterChange(event: SelectChangeEvent<string[]>) {
+    const nextValue = event.target.value;
 
-      return validSelection;
-    });
-  }, [hasUserTouchedSourceFilter, sourceOptions]);
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      sourceIds: typeof nextValue === 'string' ? nextValue.split(',') : nextValue,
+    }));
+    resetPage();
+  }
 
-  function handleToggleDetail(attackerIp: string) {
-    setExpandedIp((currentIp) => (currentIp === attackerIp ? null : attackerIp));
+  function handleDateChange(field: 'from' | 'to', value: Dayjs | null) {
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      dateRange: normalizeLocalDateRange(currentFilters.dateRange, field, value),
+    }));
+    resetPage();
+  }
+
+  function handleMinDistinctSourceCountChange(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const nextValue = event.target.value;
+
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      minDistinctSourceCount: nextValue === '' ? '' : String(Math.max(1, Number(nextValue))),
+    }));
+    resetPage();
+  }
+
+  function handleToggleDetail(alertId: number) {
+    setExpandedAlertId((currentId) => (currentId === alertId ? null : alertId));
   }
 
   function handleRefresh() {
-    setHasUserTouchedSourceFilter(false);
-    setSelectedSources(sourceOptions);
     setRefreshToken((currentToken) => currentToken + 1);
   }
 
-  function handleToggleSource(sourceName: string) {
-    setHasUserTouchedSourceFilter(true);
-    setSelectedSources((currentSelection) =>
-      currentSelection.includes(sourceName)
-        ? currentSelection.filter((item) => item !== sourceName)
-        : [...currentSelection, sourceName],
-    );
+  function handlePageChange(_event: unknown, nextPage: number) {
+    setPaginationModel((currentPaginationModel) => ({
+      ...currentPaginationModel,
+      page: nextPage,
+    }));
   }
 
-  const hasRemoteItems = (alertsQuery.data?.items.length ?? 0) > 0;
+  function handleRowsPerPageChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setPaginationModel({
+      page: 0,
+      pageSize: Number(event.target.value),
+    });
+  }
 
   return (
     <Stack component="section" id="alerts" spacing={2} sx={{ scrollMarginTop: 144 }}>
@@ -361,65 +504,128 @@ export default function AlertsSection() {
           Alertes IP communes
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Sélectionnez des IP partagees entre plusieurs sources, avec detail inline par source.
+          Consultation paginee des IP partagees entre plusieurs sources, avec detail
+          inline par source.
         </Typography>
       </Stack>
       <Card variant="outlined">
-        <CardContent>
+        <CardContent sx={{ px: { xs: 1, md: 2 }, py: 2 }}>
           <Stack spacing={2.5}>
-            <Stack
-              direction={{ xs: 'column', lg: 'row' }}
-              sx={{ alignItems: { lg: 'center' }, justifyContent: 'space-between', gap: 2 }}
-            >
-              <Stack spacing={0.5}>
-                <Typography component="h3" variant="subtitle2">
-                  Liste des alertes
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Sélectionnez une ou plusieurs sources pour filtrer la liste.
-                </Typography>
-              </Stack>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<RefreshRoundedIcon fontSize="small" />}
-                onClick={handleRefresh}
-              >
-                Rafraîchir
-              </Button>
-            </Stack>
-            <SourceFilterChips
-              selectedSources={selectedSources}
-              sourceOptions={sourceOptions}
-              onToggleSource={handleToggleSource}
-            />
+            <Grid container spacing={1.5}>
+              <Grid size={{ xs: 12, lg: 4 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="alerts-source-label" shrink>
+                    Sources
+                  </InputLabel>
+                  <Select
+                    multiple
+                    labelId="alerts-source-label"
+                    label="Sources"
+                    value={filters.sourceIds}
+                    onChange={handleSourceFilterChange}
+                    disabled={sourcesQuery.isLoading}
+                    displayEmpty
+                    renderValue={(value) =>
+                      formatSelectedSources(value as string[], sourceOptions)
+                    }
+                  >
+                    {sourceOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        <Checkbox
+                          size="small"
+                          checked={filters.sourceIds.includes(option.value)}
+                        />
+                        <ListItemText
+                          primary={
+                            <SourceOptionLabel
+                              color={option.color}
+                              label={option.label}
+                              noWrap={false}
+                            />
+                          }
+                        />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="Sources distinctes min."
+                  value={filters.minDistinctSourceCount}
+                  onChange={handleMinDistinctSourceCountChange}
+                  slotProps={{
+                    htmlInput: {
+                      min: 1,
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid size={{ xs: 12, lg: 5 }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  sx={{
+                    gap: 1,
+                    alignItems: { xs: 'stretch', sm: 'center' },
+                    justifyContent: { lg: 'flex-end' },
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <CustomDatePicker
+                    label="Du"
+                    value={filters.dateRange.from}
+                    onChange={(value) => handleDateChange('from', value)}
+                    maxDate={filters.dateRange.to}
+                  />
+                  <CustomDatePicker
+                    label="Au"
+                    value={filters.dateRange.to}
+                    onChange={(value) => handleDateChange('to', value)}
+                    minDate={filters.dateRange.from}
+                  />
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<RefreshRoundedIcon fontSize="small" />}
+                    onClick={handleRefresh}
+                  >
+                    Rafraîchir
+                  </Button>
+                </Stack>
+              </Grid>
+            </Grid>
+
+            {sourcesQuery.isError ? (
+              <Alert severity="warning">
+                Impossible de charger la liste des sources. Le filtre source peut etre
+                incomplet.
+                {sourcesQuery.error instanceof Error ? ` (${sourcesQuery.error.message})` : ''}
+              </Alert>
+            ) : null}
+
             <Divider />
-            {alertsQuery.isLoading ? <LoadingTableState /> : null}
+
+            {isTableLoading && rows.length === 0 ? <LoadingTableState /> : null}
             {alertsQuery.isError ? (
               <Alert severity="warning">
                 Impossible de charger la liste des alertes IP communes.
+                {alertsQuery.error instanceof Error ? ` (${alertsQuery.error.message})` : ''}
               </Alert>
             ) : null}
-            {!alertsQuery.isLoading && !alertsQuery.isError && !hasRemoteItems ? (
+            {!isTableLoading && !alertsQuery.isError && totalItems === 0 ? (
               <Alert severity="info">
-                Aucune alerte IP commune n&apos;a ete detectee.
+                Aucune alerte IP commune ne correspond aux filtres selectionnes.
               </Alert>
             ) : null}
-            {!alertsQuery.isLoading &&
-            !alertsQuery.isError &&
-            hasRemoteItems &&
-            filteredAlerts.length === 0 ? (
-              <Alert severity="info">
-                Aucune alerte ne correspond aux sources selectionnees.
-              </Alert>
-            ) : null}
-            {!alertsQuery.isLoading &&
-            !alertsQuery.isError &&
-            filteredAlerts.length > 0 ? (
+            {!alertsQuery.isError && (rows.length > 0 || totalItems > 0) ? (
               <Stack spacing={1.5}>
                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {filteredAlerts.length} alerte{filteredAlerts.length > 1 ? 's' : ''}{' '}
-                  visible{filteredAlerts.length > 1 ? 's' : ''}
+                  Pagination cote serveur, triee par nombre de sources distinctes.
                 </Typography>
                 <TableContainer
                   sx={{
@@ -430,23 +636,24 @@ export default function AlertsSection() {
                   <Table
                     stickyHeader
                     aria-label="Alertes IP communes"
-                    sx={{ minWidth: 760 }}
+                    sx={{ minWidth: 820 }}
                   >
                     <TableHead>
                       <TableRow>
                         <TableCell />
+                        <TableCell>ID</TableCell>
                         <TableCell>IP attaquante</TableCell>
-                        <TableCell>Sources concernees</TableCell>
+                        <TableCell>Sources distinctes</TableCell>
                         <TableCell>Premier signalement</TableCell>
                         <TableCell>Dernier signalement</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {filteredAlerts.map((alert) => (
+                      {rows.map((alert) => (
                         <CommonIpAlertRow
-                          key={alert.attacker_ip}
+                          key={alert.id}
                           alert={alert}
-                          isExpanded={expandedIp === alert.attacker_ip}
+                          isExpanded={expandedAlertId === alert.id}
                           onToggle={handleToggleDetail}
                           refreshToken={refreshToken}
                         />
@@ -454,6 +661,16 @@ export default function AlertsSection() {
                     </TableBody>
                   </Table>
                 </TableContainer>
+                <TablePagination
+                  component="div"
+                  count={totalItems}
+                  page={paginationModel.page}
+                  rowsPerPage={paginationModel.pageSize}
+                  rowsPerPageOptions={[10, 20, 50, 100]}
+                  labelRowsPerPage="Alertes par page"
+                  onPageChange={handlePageChange}
+                  onRowsPerPageChange={handleRowsPerPageChange}
+                />
               </Stack>
             ) : null}
           </Stack>
