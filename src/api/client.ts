@@ -8,7 +8,7 @@ type ApiQueryValue =
 
 type ApiQueryParams = Record<string, ApiQueryValue>;
 
-type ApiMethod = 'GET' | 'PATCH';
+type ApiMethod = 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
 
 type ApiRequestOptions = {
   headers?: HeadersInit;
@@ -121,6 +121,24 @@ export const apiClient = {
     return request<T>(path, {
       ...options,
       method: 'PATCH',
+    });
+  },
+  post<T = void>(path: string, options: ApiMutationOptions = {}) {
+    return request<T>(path, {
+      ...options,
+      method: 'POST',
+    });
+  },
+  put<T = void>(path: string, options: ApiMutationOptions = {}) {
+    return request<T>(path, {
+      ...options,
+      method: 'PUT',
+    });
+  },
+  delete<T = void>(path: string, options: ApiRequestOptions = {}) {
+    return request<T>(path, {
+      ...options,
+      method: 'DELETE',
     });
   },
 };

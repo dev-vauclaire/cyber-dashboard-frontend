@@ -23,6 +23,10 @@ export type CommonIpAlertsQuery = DateRangeQuery & {
 export type CommonIpAlertSourceDetail = {
   source_id: number;
   source_name: string;
+  sensor_type_code: string | null;
+  collector_type: string | null;
+  domain_name: string | null;
+  external_id: string | null;
   first_seen_at: IsoUtcDateTimeString;
   last_seen_at: IsoUtcDateTimeString;
   hit_count: number;
@@ -31,4 +35,16 @@ export type CommonIpAlertSourceDetail = {
 export type CommonIpAlertDetail = {
   attacker_ip: string;
   sources: CommonIpAlertSourceDetail[];
+};
+
+export type AlertEmailPayload = {
+  recipient: string;
+  subject: string;
+  body: string;
+};
+
+export type AlertEmailResponse = {
+  alert_id: number;
+  recipient: string;
+  sent: boolean;
 };

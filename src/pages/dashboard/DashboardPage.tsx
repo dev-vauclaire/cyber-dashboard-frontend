@@ -6,19 +6,19 @@ import { alpha } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import AppTheme from './shared-theme/AppTheme';
+import AppTheme from '../../shared-theme/AppTheme';
 import AlertsSection from './sections/alerts/AlertsSection';
 import AttacksSection from './sections/attacks/AttacksSection';
 import ChartsSection from './sections/charts/ChartsSection';
 import DashboardHeader from './sections/header/DashboardHeader';
 import OverviewSection from './sections/overview/OverviewSection';
-import SourcesSection from './sections/sources/SourcesSection';
+import TopologySection from './sections/topology/TopologySection';
 import {
   chartsCustomizations,
   dataGridCustomizations,
   datePickersCustomizations,
   treeViewCustomizations,
-} from './theme/customizations';
+} from '../../theme/customizations';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -27,7 +27,7 @@ const xThemeComponents = {
   ...treeViewCustomizations,
 };
 
-export default function Dashboard(props: { disableCustomTheme?: boolean }) {
+export default function DashboardPage(props: { disableCustomTheme?: boolean }) {
   return (
     <AppTheme {...props} themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
@@ -57,10 +57,10 @@ export default function Dashboard(props: { disableCustomTheme?: boolean }) {
               sx={{ width: '100%', maxWidth: { sm: '100%', md: '1700px' } }}
             >
               <OverviewSection />
+              <TopologySection />
               <ChartsSection />
               <AlertsSection />
               <AttacksSection />
-              <SourcesSection />
             </Stack>
           </Stack>
         </Box>

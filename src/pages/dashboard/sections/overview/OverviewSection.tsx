@@ -3,9 +3,9 @@ import Alert from '@mui/material/Alert';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { fetchDashboardOverview } from '../../api/dashboard';
-import StatCard from '../../components/cards/StatCard';
-import type { DashboardOverview } from '../../types/dashboard';
+import { fetchDashboardOverview } from '../../../../api/dashboard';
+import StatCard from '../../../../components/cards/StatCard';
+import type { DashboardOverview } from '../../../../types/dashboard';
 
 function formatCount(value: number | undefined) {
   if (value == null) {

@@ -29,10 +29,10 @@ import {
   patchSourceActiveStatus,
   patchSourceColor,
   patchSourceName,
-} from '../../api/sources';
-import { useSourceColorContext } from '../../internals/source-colors/SourceColorContext';
-import type { Source, SourceInventoryItem } from '../../types/sources';
-import { getSourceColor } from '../../utils/sourceColors';
+} from '../../../../api/sources';
+import { useSourceColorContext } from '../../../../internals/source-colors/SourceColorContext';
+import type { Source, SourceInventoryItem } from '../../../../types/sources';
+import { getSourceColor } from '../../../../utils/sourceColors';
 
 const SOURCES_QUERY_KEY = ['sourcesColorRegistry'] as const;
 const SOURCES_INVENTORY_QUERY_KEY = ['sourcesInventory'] as const;

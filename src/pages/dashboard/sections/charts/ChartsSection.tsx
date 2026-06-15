@@ -7,19 +7,19 @@ import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import CustomDatePicker from '../../components/filters/CustomDatePicker';
-import LinearChart from '../../components/charts/LinearChart';
-import SourceDistributionChart from '../../components/charts/SourceDistributionChart';
-import { fetchAttacksBySource, fetchAttacksBySourceTimeseries } from '../../api/stats';
+import CustomDatePicker from '../../../../components/filters/CustomDatePicker';
+import LinearChart from '../../../../components/charts/LinearChart';
+import SourceDistributionChart from '../../../../components/charts/SourceDistributionChart';
+import { fetchAttacksBySource, fetchAttacksBySourceTimeseries } from '../../../../api/stats';
 import type {
   AttackStatsDateRangeQuery,
   AttacksBySourceResponse,
   AttacksBySourceTimeseriesResponse,
-} from '../../types/stats';
+} from '../../../../types/stats';
 import {
   buildParisDayBoundaryUtcIso,
   formatDateToParisDayLabel,
-} from '../../utils/dateUtils';
+} from '../../../../utils/dateUtils';
 
 type ChartsLocalDateRange = {
   from: Dayjs | null;
@@ -148,6 +148,9 @@ export default function ChartsSection() {
     createDefaultChartsDateRange(),
   );
   const [refreshToken, setRefreshToken] = React.useState(0);
+  const [hiddenSourceIds, setHiddenSourceIds] = React.useState<Set<number>>(
+    () => new Set(),
+  );
   const dateRangeQuery = buildAttackStatsDateRangeQuery(localDateRange);
   const timelineQuery = useQuery({
     queryFn: () => fetchAttacksBySourceTimeseries(dateRangeQuery!),
@@ -183,6 +186,38 @@ export default function ChartsSection() {
   function handleRefresh() {
     setRefreshToken((currentToken) => currentToken + 1);
   }
+
+  function handleToggleSource(sourceId: number) {
+    setHiddenSourceIds((currentHiddenSourceIds) => {
+      const nextHiddenSourceIds = new Set(currentHiddenSourceIds);
+      if (nextHiddenSourceIds.has(sourceId)) {
+        nextHiddenSourceIds.delete(sourceId);
+      } else {
+        nextHiddenSourceIds.add(sourceId);
+      }
+      return nextHiddenSourceIds;
+    });
+  }
+
+  const visibleTimelineTotal = timelineChartData.series
+    .filter((item) => !hiddenSourceIds.has(item.sourceId))
+    .reduce((sum, item) => sum + item.attackCount, 0);
+  const visibleDistributionItems = sourceDistributionData.items.filter(
+    (item) => !hiddenSourceIds.has(item.sourceId),
+  );
+  const visibleDistributionTotal = visibleDistributionItems.reduce(
+    (sum, item) => sum + item.attackCount,
+    0,
+  );
+  const sourceDistributionItemsWithVisiblePercentages = sourceDistributionData.items.map(
+    (item) => ({
+      ...item,
+      percentage:
+        hiddenSourceIds.has(item.sourceId) || visibleDistributionTotal === 0
+          ? 0
+          : (item.attackCount / visibleDistributionTotal) * 100,
+    }),
+  );
 
   return (
     <Stack component="section" id="charts" spacing={2} sx={{ scrollMarginTop: 144 }}>
@@ -233,11 +268,13 @@ export default function ChartsSection() {
       <Grid container spacing={2} columns={12}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <LinearChart
-            totalAttacks={timelineChartData.totalAttacks}
+            totalAttacks={visibleTimelineTotal}
             labels={timelineChartData.labels}
             series={timelineChartData.series}
             isLoading={timelineQuery.isLoading}
             isError={timelineQuery.isError}
+            hiddenSourceIds={hiddenSourceIds}
+            onToggleSource={handleToggleSource}
             isEmpty={
               !timelineQuery.isLoading &&
               !timelineQuery.isError &&
@@ -247,10 +284,12 @@ export default function ChartsSection() {
         </Grid>
         <Grid size={{ xs: 12, lg: 4 }}>
           <SourceDistributionChart
-            totalAttacks={sourceDistributionData.totalAttacks}
-            items={sourceDistributionData.items}
+            totalAttacks={visibleDistributionTotal}
+            items={sourceDistributionItemsWithVisiblePercentages}
             isLoading={sourceDistributionQuery.isLoading}
             isError={sourceDistributionQuery.isError}
+            hiddenSourceIds={hiddenSourceIds}
+            onToggleSource={handleToggleSource}
             isEmpty={
               !sourceDistributionQuery.isLoading &&
               !sourceDistributionQuery.isError &&

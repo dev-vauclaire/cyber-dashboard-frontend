@@ -3,7 +3,7 @@ import type { IsoUtcDateTimeString } from './common';
 export type Source = {
   source_id: number;
   source_name: string;
-  source_external_id: string;
+  domain_name: string | null;
   is_active: boolean;
   created_at: IsoUtcDateTimeString;
   sensor_type_code: string;

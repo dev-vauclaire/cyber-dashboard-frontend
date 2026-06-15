@@ -3,6 +3,8 @@ import type {
   CommonIpAlertDetail,
   CommonIpAlertsListResponse,
   CommonIpAlertsQuery,
+  AlertEmailPayload,
+  AlertEmailResponse,
 } from '../types/alerts';
 
 export async function fetchCommonIpAlerts(
@@ -17,4 +19,13 @@ export async function fetchCommonIpAlertDetail(
   alertId: number,
 ): Promise<CommonIpAlertDetail> {
   return apiClient.get<CommonIpAlertDetail>(`/api/alerts/common-ips/${alertId}`);
+}
+
+export async function sendCommonIpAlertEmail(
+  alertId: number,
+  payload: AlertEmailPayload,
+): Promise<AlertEmailResponse> {
+  return apiClient.post<AlertEmailResponse>(`/api/alerts/common-ips/${alertId}/email`, {
+    body: payload,
+  });
 }

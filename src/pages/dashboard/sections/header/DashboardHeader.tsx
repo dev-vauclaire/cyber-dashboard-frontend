@@ -1,12 +1,17 @@
 import SecurityIcon from '@mui/icons-material/Security';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
-import ColorModeIconDropdown from '../../shared-theme/ColorModeIconDropdown';
-import { DASHBOARD_SECTION_LINKS } from '../../utils/dashboardSections';
+import { Link as RouterLink } from 'react-router-dom';
+import ColorModeIconDropdown from '../../../../shared-theme/ColorModeIconDropdown';
+import { DASHBOARD_SECTION_LINKS } from '../../../../utils/dashboardSections';
 
 export default function DashboardHeader() {
+
+  
+
   return (
     <Stack
       component="header"
@@ -42,6 +47,15 @@ export default function DashboardHeader() {
           direction={{ xs: 'column', md: 'row' }}
           sx={{ gap: 1, alignItems: { xs: 'stretch', sm: 'center' } }}
         >
+          <Button
+            component={RouterLink}
+            to="/settings"
+            color="inherit"
+            size="small"
+            startIcon={<SettingsRoundedIcon fontSize="small" />}
+          >
+            Paramètres
+          </Button>
           <ColorModeIconDropdown />
         </Stack>
       </Stack>

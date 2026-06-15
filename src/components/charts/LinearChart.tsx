@@ -24,17 +24,23 @@ type LinearChartProps = {
   isLoading: boolean;
   isError: boolean;
   isEmpty: boolean;
+  hiddenSourceIds?: ReadonlySet<number>;
+  onToggleSource?: (sourceId: number) => void;
 };
 
 function formatCount(value: number): string {
   return new Intl.NumberFormat('fr-FR').format(value);
 }
 
-function buildLegendItems(series: LinearChartSeries[]): SourceLegendItem[] {
+function buildLegendItems(
+  series: LinearChartSeries[],
+  hiddenSourceIds: ReadonlySet<number>,
+): SourceLegendItem[] {
   return series.map((item) => ({
     sourceId: item.sourceId,
     sourceName: item.sourceName,
     sourceColor: item.sourceColor,
+    isHidden: hiddenSourceIds.has(item.sourceId),
     meta: `${formatCount(item.attackCount)} attaques`,
   }));
 }
@@ -46,8 +52,11 @@ export default function LinearChart({
   isLoading,
   isError,
   isEmpty,
+  hiddenSourceIds = new Set<number>(),
+  onToggleSource,
 }: LinearChartProps) {
   const { sourceColorRegistry } = useSourceColorContext();
+  const visibleSeries = series.filter((item) => !hiddenSourceIds.has(item.sourceId));
 
   return (
     <Card variant="outlined" sx={{ width: '100%', height: '100%' }}>
@@ -96,7 +105,7 @@ export default function LinearChart({
         {!isLoading && !isError && !isEmpty ? (
           <Stack>
             <LineChart
-              colors={series.map((item) =>
+              colors={visibleSeries.map((item) =>
                 getSourceColor({
                   sourceId: item.sourceId,
                   sourceName: item.sourceName,
@@ -112,7 +121,7 @@ export default function LinearChart({
                 },
               ]}
               yAxis={[{ width: 50 }]}
-              series={series.map((item) => ({
+              series={visibleSeries.map((item) => ({
                 id: item.sourceName,
                 label: item.sourceName,
                 data: item.data,
@@ -124,7 +133,10 @@ export default function LinearChart({
               grid={{ horizontal: true }}
               hideLegend
             />
-            <SourceLegend items={buildLegendItems(series)} />
+            <SourceLegend
+              items={buildLegendItems(series, hiddenSourceIds)}
+              onToggleItem={onToggleSource}
+            />
           </Stack>
         ) : null}
       </CardContent>

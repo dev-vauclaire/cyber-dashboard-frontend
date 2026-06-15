@@ -3,7 +3,10 @@ import { type Dayjs } from 'dayjs';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
+import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded';
+import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+import TravelExploreRoundedIcon from '@mui/icons-material/TravelExploreRounded';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -30,19 +33,23 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { fetchCommonIpAlertDetail, fetchCommonIpAlerts } from '../../api/alerts';
-import { fetchSources } from '../../api/sources';
-import CustomDatePicker from '../../components/filters/CustomDatePicker';
-import { useSourceColorContext } from '../../internals/source-colors/SourceColorContext';
+import { fetchCommonIpAlertDetail, fetchCommonIpAlerts } from '../../../../api/alerts';
+import { fetchSources } from '../../../../api/sources';
+import AlertEmailDialog from '../../../../components/dialogs/AlertEmailDialog';
+import CtiEnrichmentDialog from '../../../../components/dialogs/CtiEnrichmentDialog';
+import CustomDatePicker from '../../../../components/filters/CustomDatePicker';
+import { useSourceColorContext } from '../../../../internals/source-colors/SourceColorContext';
 import type {
   CommonIpAlertDetail,
   CommonIpAlertListItem,
   CommonIpAlertsQuery,
-} from '../../types/alerts';
-import type { Source } from '../../types/sources';
-import { buildParisDayBoundaryUtcIso, formatDate } from '../../utils/dateUtils';
-import { getSourceColor } from '../../utils/sourceColors';
+} from '../../../../types/alerts';
+import type { Source } from '../../../../types/sources';
+import { buildParisDayBoundaryUtcIso, formatDate } from '../../../../utils/dateUtils';
+import { buildSourceExternalUrl, getCollectorPortalLabel } from '../../../../utils/externalLinks';
+import { getSourceColor } from '../../../../utils/sourceColors';
 
 type AlertsLocalDateRange = {
   from: Dayjs | null;
@@ -298,6 +305,7 @@ function AlertDetailContent({
         <TableHead>
           <TableRow>
             <TableCell>Source</TableCell>
+            <TableCell>Portail</TableCell>
             <TableCell>Premier signalement</TableCell>
             <TableCell>Dernier signalement</TableCell>
             <TableCell align="right">Hits</TableCell>
@@ -309,6 +317,16 @@ function AlertDetailContent({
               sourceId: source.source_id,
               sourceName: source.source_name,
               sourceColorRegistry,
+            });
+            const collectorLabel = getCollectorPortalLabel({
+              collectorType: source.collector_type,
+              sensorTypeCode: source.sensor_type_code,
+            });
+            const externalUrl = buildSourceExternalUrl({
+              collectorType: source.collector_type,
+              sensorTypeCode: source.sensor_type_code,
+              domainName: source.domain_name,
+              externalId: source.external_id,
             });
 
             return (
@@ -327,6 +345,28 @@ function AlertDetailContent({
                     <Typography variant="body2">{source.source_name}</Typography>
                   </Stack>
                 </TableCell>
+                <TableCell>
+                  {externalUrl ? (
+                    <Tooltip title={`Ouvrir ${collectorLabel}`}>
+                      <IconButton
+                        component="a"
+                        href={externalUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        size="small"
+                        aria-label={`Ouvrir ${collectorLabel}`}
+                      >
+                        <OpenInNewRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  ) : (
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label={collectorLabel}
+                    />
+                  )}
+                </TableCell>
                 <TableCell>{formatDate(source.first_seen_at)}</TableCell>
                 <TableCell>{formatDate(source.last_seen_at)}</TableCell>
                 <TableCell align="right">{source.hit_count}</TableCell>
@@ -343,6 +383,8 @@ type CommonIpAlertRowProps = {
   alert: CommonIpAlertListItem;
   isExpanded: boolean;
   onToggle: (alertId: number) => void;
+  onOpenCti: (ipAddress: string) => void;
+  onOpenEmail: (alert: CommonIpAlertListItem) => void;
   refreshToken: number;
 };
 
@@ -350,6 +392,8 @@ function CommonIpAlertRow({
   alert,
   isExpanded,
   onToggle,
+  onOpenCti,
+  onOpenEmail,
   refreshToken,
 }: CommonIpAlertRowProps) {
   return (
@@ -380,9 +424,32 @@ function CommonIpAlertRow({
         <TableCell sx={{ py: 0 }} colSpan={6}>
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <Box sx={{ px: 2, py: 1 }}>
-              <Typography component="h4" variant="subtitle2">
-                Detail de l&apos;alerte #{alert.id} · {alert.attacker_ip}
-              </Typography>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                sx={{ justifyContent: 'space-between', gap: 1, alignItems: { sm: 'center' } }}
+              >
+                <Typography component="h4" variant="subtitle2">
+                  Detail de l&apos;alerte #{alert.id} · {alert.attacker_ip}
+                </Typography>
+                <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<TravelExploreRoundedIcon fontSize="small" />}
+                    onClick={() => onOpenCti(alert.attacker_ip)}
+                  >
+                    CTI
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<MailOutlineRoundedIcon fontSize="small" />}
+                    onClick={() => onOpenEmail(alert)}
+                  >
+                    Envoyer un email
+                  </Button>
+                </Stack>
+              </Stack>
               <AlertDetailContent
                 alertId={alert.id}
                 attackerIp={alert.attacker_ip}
@@ -403,6 +470,8 @@ export default function AlertsSection() {
   const [paginationModel, setPaginationModel] =
     React.useState<AlertPaginationModel>(DEFAULT_PAGINATION_MODEL);
   const [expandedAlertId, setExpandedAlertId] = React.useState<number | null>(null);
+  const [ctiIpAddress, setCtiIpAddress] = React.useState<string | null>(null);
+  const [emailAlert, setEmailAlert] = React.useState<CommonIpAlertListItem | null>(null);
 
   const sourcesQuery = useQuery({
     queryKey: ['sourcesColorRegistry'],
@@ -655,6 +724,8 @@ export default function AlertsSection() {
                           alert={alert}
                           isExpanded={expandedAlertId === alert.id}
                           onToggle={handleToggleDetail}
+                          onOpenCti={setCtiIpAddress}
+                          onOpenEmail={setEmailAlert}
                           refreshToken={refreshToken}
                         />
                       ))}
@@ -676,6 +747,17 @@ export default function AlertsSection() {
           </Stack>
         </CardContent>
       </Card>
+      <CtiEnrichmentDialog
+        open={ctiIpAddress != null}
+        ipAddress={ctiIpAddress}
+        onClose={() => setCtiIpAddress(null)}
+      />
+      <AlertEmailDialog
+        open={emailAlert != null}
+        alertId={emailAlert?.id ?? null}
+        ipAddress={emailAlert?.attacker_ip ?? null}
+        onClose={() => setEmailAlert(null)}
+      />
     </Stack>
   );
 }

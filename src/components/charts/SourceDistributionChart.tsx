@@ -27,6 +27,8 @@ type SourceDistributionChartProps = {
   isLoading: boolean;
   isError: boolean;
   isEmpty: boolean;
+  hiddenSourceIds?: ReadonlySet<number>;
+  onToggleSource?: (sourceId: number) => void;
 };
 
 interface StyledTextProps {
@@ -100,8 +102,11 @@ export default function SourceDistributionChart({
   isLoading,
   isError,
   isEmpty,
+  hiddenSourceIds = new Set<number>(),
+  onToggleSource,
 }: SourceDistributionChartProps) {
   const { sourceColorRegistry } = useSourceColorContext();
+  const visibleItems = items.filter((item) => !hiddenSourceIds.has(item.sourceId));
 
   return (
     <Card
@@ -136,7 +141,7 @@ export default function SourceDistributionChart({
           <Stack>
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
               <PieChart
-                colors={items.map((item) =>
+                colors={visibleItems.map((item) =>
                   getSourceColor({
                     sourceId: item.sourceId,
                     sourceName: item.sourceName,
@@ -152,7 +157,7 @@ export default function SourceDistributionChart({
                 }}
                 series={[
                   {
-                    data: items.map((item) => ({
+                    data: visibleItems.map((item) => ({
                       id: item.sourceId,
                       label: item.sourceName,
                       value: item.attackCount,
@@ -171,6 +176,7 @@ export default function SourceDistributionChart({
               </PieChart>
             </Box>
             {items.map((item) => {
+              const isHidden = hiddenSourceIds.has(item.sourceId);
               const color = getSourceColor({
                 sourceId: item.sourceId,
                 sourceName: item.sourceName,
@@ -182,7 +188,14 @@ export default function SourceDistributionChart({
                 <Stack
                   key={item.sourceId}
                   direction="row"
-                  sx={{ alignItems: 'center', gap: 2, pb: 2 }}
+                  onClick={() => onToggleSource?.(item.sourceId)}
+                  sx={{
+                    alignItems: 'center',
+                    cursor: onToggleSource == null ? 'default' : 'pointer',
+                    gap: 2,
+                    opacity: isHidden ? 0.45 : 1,
+                    pb: 2,
+                  }}
                 >
                   <Stack sx={{ gap: 1, flexGrow: 1 }}>
                     <Stack
@@ -193,7 +206,13 @@ export default function SourceDistributionChart({
                         gap: 2,
                       }}
                     >
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 500,
+                          textDecoration: isHidden ? 'line-through' : 'none',
+                        }}
+                      >
                         {item.sourceName}
                       </Typography>
                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -205,9 +224,9 @@ export default function SourceDistributionChart({
                       aria-label={`Poids de ${item.sourceName}`}
                       value={item.percentage}
                       sx={{
-                        backgroundColor: alpha(color, 0.16),
+                        backgroundColor: alpha(isHidden ? '#8A8F98' : color, 0.16),
                         [`& .${linearProgressClasses.bar}`]: {
-                          backgroundColor: color,
+                          backgroundColor: isHidden ? '#8A8F98' : color,
                         },
                       }}
                     />
