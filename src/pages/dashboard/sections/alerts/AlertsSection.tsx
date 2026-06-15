@@ -434,7 +434,26 @@ function CommonIpAlertRow({
                 <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
                   <Button
                     size="small"
-                    variant="outlined"
+                    variant="contained"
+                    color="inherit"
+                    disableElevation
+                    sx={{
+                      '&&': {
+                        backgroundColor: '#8F00FF',
+                        backgroundImage: 'none',
+                        borderColor: '#8F00FF',
+                        boxShadow: 'none',
+                        color: '#FFFFFF',
+                      },
+                      '&& .MuiButton-startIcon': { color: '#FFFFFF' },
+                      '&&:hover': {
+                        backgroundColor: '#7B00D9',
+                        backgroundImage: 'none',
+                        borderColor: '#7B00D9',
+                        boxShadow: 'none',
+                        color: '#FFFFFF',
+                      },
+                    }}
                     startIcon={<TravelExploreRoundedIcon fontSize="small" />}
                     onClick={() => onOpenCti(alert.attacker_ip)}
                   >
@@ -442,7 +461,26 @@ function CommonIpAlertRow({
                   </Button>
                   <Button
                     size="small"
-                    variant="outlined"
+                    variant="contained"
+                    color="inherit"
+                    disableElevation
+                    sx={{
+                      '&&': {
+                        backgroundColor: '#00BFFF',
+                        backgroundImage: 'none',
+                        borderColor: '#00BFFF',
+                        boxShadow: 'none',
+                        color: '#FFFFFF',
+                      },
+                      '&& .MuiButton-startIcon': { color: '#FFFFFF' },
+                      '&&:hover': {
+                        backgroundColor: '#00A8E0',
+                        backgroundImage: 'none',
+                        borderColor: '#00A8E0',
+                        boxShadow: 'none',
+                        color: '#FFFFFF',
+                      },
+                    }}
                     startIcon={<MailOutlineRoundedIcon fontSize="small" />}
                     onClick={() => onOpenEmail(alert)}
                   >
