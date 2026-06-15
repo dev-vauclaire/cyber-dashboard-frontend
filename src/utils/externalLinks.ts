@@ -28,20 +28,16 @@ export function getCollectorPortalLabel({
 export function buildSourceExternalUrl({
   collectorType,
   sensorTypeCode,
-  domainName,
-  externalId,
 }: SourceExternalLinkInput): string | null {
-  if ((collectorType === 'ogo' || sensorTypeCode === 'waf') && domainName) {
-    return `${OGO_WEB_BASE_URL}/${encodeURIComponent(domainName)}`;
+  if (collectorType === 'ogo' || sensorTypeCode === 'waf') {
+    return `https://dashboard.ogosecurity.com/#/auth/login`;
   }
 
-  if (
-    (collectorType === 'serenicity' ||
+  if (collectorType === 'serenicity' ||
       sensorTypeCode === 'lurio' ||
-      sensorTypeCode === 'detoxio') &&
-    externalId
-  ) {
-    return `${SERENICITY_WEB_BASE_URL}/${encodeURIComponent(externalId)}`;
+      sensorTypeCode === 'detoxio') 
+  {
+    return `https://control.serenicity.fr/login`;
   }
 
   return null;
