@@ -1,13 +1,21 @@
 import '@xyflow/react/dist/style.css';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import CloseFullscreenRoundedIcon from '@mui/icons-material/CloseFullscreenRounded';
+import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
+import OpenInFullRoundedIcon from '@mui/icons-material/OpenInFullRounded';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useColorScheme } from '@mui/material/styles';
 import {
@@ -30,6 +38,8 @@ import type { AlertNodeData } from './types/types';
 
 import { MAX_HEIGHT_NODE, OFFSET } from './types/types';
 
+import { getAveragePosition, getSpacedPositionsByPreferredY, exportElementAsPng } from './utils/utils';
+
 const COLLECTOR_X = 0;
 const SOURCE_X = 460;
 const ALERT_X = 1300;
@@ -37,7 +47,24 @@ const SOURCE_ROW_GAP = OFFSET + MAX_HEIGHT_NODE;
 const ALERT_ROW_GAP = OFFSET + MAX_HEIGHT_NODE;
 const COLLECTOR_ROW_GAP = OFFSET + MAX_HEIGHT_NODE;
 const DEFAULT_MIN_DISTINCT_SOURCE_COUNT = 3;
-const DEFAULT_ALERT_LIMIT = 10;
+const DEFAULT_ALERT_LIMIT = 20;
+
+const EXPORT_BACKGROUND_BY_MODE = {
+  dark: '#0B1020',
+  light: '#FFFFFF',
+} as const;
+const EDGE_COLORS_BY_MODE = {
+  dark: {
+    alert: '#F59E0B',
+    alertStrong: '#F87171',
+    topology: '#94A3B8',
+  },
+  light: {
+    alert: '#ED6C02',
+    alertStrong: '#D32F2F',
+    topology: '#64748B',
+  },
+} as const;
 
 { /* Toutes les nodes */ }
 const nodeTypes = {
@@ -46,63 +73,17 @@ const nodeTypes = {
   alert: AlertNode,
 };
 
-function getAveragePosition(values: number[], fallback: number): number {
-  if (values.length === 0) {
-    return fallback;
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function getSpacedPositionsByPreferredY(
-  preferredPositions: Array<{ id: number; y: number }>,
-  minimumGap: number,
-): Map<number, number> {
-  const sortedPositions = [...preferredPositions].sort((first, second) => first.y - second.y);
-  const spacedPositions = new Map<number, number>();
-  const collisionGroups: Array<Array<{ id: number; y: number }>> = [];
-
-  for (const position of sortedPositions) {
-    const currentGroup = collisionGroups[collisionGroups.length - 1];
-    const previousPosition = currentGroup?.[currentGroup.length - 1];
-
-    if (!currentGroup || !previousPosition || position.y - previousPosition.y >= minimumGap) {
-      collisionGroups.push([position]);
-    } else {
-      currentGroup.push(position);
-    }
-  }
-
-  for (const group of collisionGroups) {
-    const groupCenter = getAveragePosition(
-      group.map((position) => position.y),
-      group[0]?.y ?? 0,
-    );
-    const firstY = Math.max(0, groupCenter - ((group.length - 1) * minimumGap) / 2);
-
-    group.forEach((position, index) => {
-      spacedPositions.set(position.id, firstY + index * minimumGap);
-    });
-  }
-
-  let previousY: number | null = null;
-  for (const position of sortedPositions) {
-    const currentY: number = spacedPositions.get(position.id) ?? position.y;
-    const nextY: number = previousY == null ? currentY : Math.max(currentY, previousY + minimumGap);
-    spacedPositions.set(position.id, nextY);
-    previousY = nextY;
-  }
-
-  return spacedPositions;
-}
-
 export default function TopologySection() {
   const { mode, systemMode } = useColorScheme();
   const reactFlowColorMode = mode === 'system' ? (systemMode ?? 'light') : (mode ?? 'light');
+  const edgeColors = EDGE_COLORS_BY_MODE[reactFlowColorMode];
   const [minDistinctSourceCount, setMinDistinctSourceCount] = useState(DEFAULT_MIN_DISTINCT_SOURCE_COUNT);
   const [alertLimit, setAlertLimit] = useState(DEFAULT_ALERT_LIMIT);
   const [hiddenAlertIds, setHiddenAlertIds] = useState<number[]>([]);
   const [hiddenAlertEdgeIds, setHiddenAlertEdgeIds] = useState<string[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const flowContainerRef = useRef<HTMLDivElement | null>(null);
+  const dialogFlowContainerRef = useRef<HTMLDivElement | null>(null);
   const topologyQuery = useQuery({
     queryKey: ['dashboardTopology', minDistinctSourceCount, alertLimit],
     queryFn: () =>
@@ -112,13 +93,35 @@ export default function TopologySection() {
       }),
   });
 
-  const { nodes, edges } = useMemo(() => {
+  const handleToggleAlertVisibility = useCallback((alertId: number) => {
+    const alertLinks = topologyQuery.data?.alert_links ?? [];
+    const relatedEdgeIds = alertLinks
+      .filter((link) => link.alert_id === alertId)
+      .map((link) => `source-${link.source_id}-alert-${link.alert_id}`);
+
+    setHiddenAlertIds((currentIds) =>
+      currentIds.includes(alertId)
+        ? currentIds.filter((currentId) => currentId !== alertId)
+        : [...currentIds, alertId],
+    );
+    setHiddenAlertEdgeIds((currentIds) => {
+      const currentIdSet = new Set(currentIds);
+      const shouldShow =
+        relatedEdgeIds.length > 0 && relatedEdgeIds.every((edgeId) => currentIdSet.has(edgeId));
+
+      if (shouldShow) {
+        return currentIds.filter((currentId) => !relatedEdgeIds.includes(currentId));
+      }
+
+      return Array.from(new Set([...currentIds, ...relatedEdgeIds]));
+    });
+  }, [topologyQuery.data?.alert_links]);
+
+  const baseGraph = useMemo(() => {
     const collectors = topologyQuery.data?.collectors ?? [];
     const sources = topologyQuery.data?.sources ?? [];
     const alerts = topologyQuery.data?.alerts ?? [];
     const alertLinks = topologyQuery.data?.alert_links ?? [];
-    const hiddenAlertIdSet = new Set(hiddenAlertIds);
-    const hiddenAlertEdgeIdSet = new Set(hiddenAlertEdgeIds);
     const sourceYById = new Map(
       sources.map((source, index) => [source.source_id, index * SOURCE_ROW_GAP]),
     );
@@ -171,29 +174,8 @@ export default function TopologySection() {
       },
       data: {
         alert,
-        hidden: hiddenAlertIdSet.has(alert.alert_id),
-        onToggleVisibility: (alertId: number) => {
-          const relatedEdgeIds = alertLinks
-            .filter((link) => link.alert_id === alertId)
-            .map((link) => `source-${link.source_id}-alert-${link.alert_id}`);
-
-          setHiddenAlertIds((currentIds) =>
-            currentIds.includes(alertId)
-              ? currentIds.filter((currentId) => currentId !== alertId)
-              : [...currentIds, alertId],
-          );
-          setHiddenAlertEdgeIds((currentIds) => {
-            const currentIdSet = new Set(currentIds);
-            const shouldShow =
-              relatedEdgeIds.length > 0 && relatedEdgeIds.every((edgeId) => currentIdSet.has(edgeId));
-
-            if (shouldShow) {
-              return currentIds.filter((currentId) => !relatedEdgeIds.includes(currentId));
-            }
-
-            return Array.from(new Set([...currentIds, ...relatedEdgeIds]));
-          });
-        },
+        hidden: false,
+        onToggleVisibility: handleToggleAlertVisibility,
       },
     }));
     const topologyEdges: Edge[] = sources
@@ -205,24 +187,144 @@ export default function TopologySection() {
         animated:
           source.last_inventory_status === 'failed' ||
           source.last_collection_status === 'failed',
+        markerEnd: { type: MarkerType.ArrowClosed, color: edgeColors.topology },
+        style: { stroke: edgeColors.topology },
       }));
     const alertEdges: Edge[] = alertLinks.map((link) => ({
       id: `source-${link.source_id}-alert-${link.alert_id}`,
       source: `source-${link.source_id}`,
       target: `alert-${link.alert_id}`,
       label: link.hit_count > 1 ? `${link.hit_count}` : undefined,
-      hidden: hiddenAlertEdgeIdSet.has(`source-${link.source_id}-alert-${link.alert_id}`),
-      markerEnd: { type: MarkerType.ArrowClosed },
-      style: { stroke: link.hit_count >= 5 ? 'error.main' : 'warning.main' },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: link.hit_count >= 5 ? edgeColors.alertStrong : edgeColors.alert,
+      },
+      style: { stroke: link.hit_count >= 5 ? edgeColors.alertStrong : edgeColors.alert },
     }));
 
     return {
       nodes: [...collectorNodes, ...sourceNodes, ...alertNodes],
       edges: [...topologyEdges, ...alertEdges],
     };
-  }, [hiddenAlertEdgeIds, hiddenAlertIds, topologyQuery.data]);
+  }, [edgeColors, handleToggleAlertVisibility, topologyQuery.data]);
+
+  const hiddenAlertIdSet = useMemo(() => new Set(hiddenAlertIds), [hiddenAlertIds]);
+  const hiddenAlertEdgeIdSet = useMemo(() => new Set(hiddenAlertEdgeIds), [hiddenAlertEdgeIds]);
+
+  const nodes = useMemo(
+    () =>
+      baseGraph.nodes.map((node) => {
+        if (node.type !== 'alert') {
+          return node;
+        }
+
+        const alertNode = node as Node<AlertNodeData, 'alert'>;
+        const hidden = hiddenAlertIdSet.has(alertNode.data.alert.alert_id);
+
+        if (alertNode.data.hidden === hidden) {
+          return alertNode;
+        }
+
+        return {
+          ...alertNode,
+          data: {
+            ...alertNode.data,
+            hidden,
+          },
+        };
+      }),
+    [baseGraph.nodes, hiddenAlertIdSet],
+  );
+
+  const edges = useMemo(
+    () =>
+      baseGraph.edges.map((edge) => {
+        const hidden = hiddenAlertEdgeIdSet.has(edge.id);
+
+        if (edge.hidden === hidden) {
+          return edge;
+        }
+
+        return {
+          ...edge,
+          hidden,
+        };
+      }),
+    [baseGraph.edges, hiddenAlertEdgeIdSet],
+  );
+
+  const handleExportImage = useCallback(() => {
+    const targetElement = isExpanded ? dialogFlowContainerRef.current : flowContainerRef.current;
+
+    if (!targetElement) {
+      return;
+    }
+
+    void exportElementAsPng(
+      targetElement,
+      `cyber-dashboard-topology-${new Date().toISOString().slice(0, 10)}.png`,
+      EXPORT_BACKGROUND_BY_MODE[reactFlowColorMode],
+    );
+  }, [isExpanded, reactFlowColorMode]);
 
   const isEmpty = !topologyQuery.isLoading && nodes.length === 0;
+  const renderFilterControls = () => (
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+      <TextField
+        label="Sources distinctes min."
+        type="number"
+        size="small"
+        value={minDistinctSourceCount}
+        slotProps={{
+          htmlInput: { min: 2 },
+        }}
+        onChange={(event) => {
+          const nextValue = Number(event.target.value);
+          setMinDistinctSourceCount(Number.isFinite(nextValue) && nextValue >= 2 ? nextValue : 2);
+          setHiddenAlertIds([]);
+          setHiddenAlertEdgeIds([]);
+        }}
+      />
+      <TextField
+        label="Limite alertes"
+        type="number"
+        size="small"
+        value={alertLimit}
+        slotProps={{
+          htmlInput: { min: 1, max: 500 },
+        }}
+        onChange={(event) => {
+          const nextValue = Number(event.target.value);
+          setAlertLimit(Number.isFinite(nextValue) && nextValue >= 1 ? Math.min(nextValue, 50) : 1);
+          setHiddenAlertIds([]);
+          setHiddenAlertEdgeIds([]);
+        }}
+      />
+    </Stack>
+  );
+
+  const graphContent = (containerRef: React.RefObject<HTMLDivElement | null>, height: number | string) => (
+    <Box
+      ref={containerRef}
+      sx={{
+        height,
+        border: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: EXPORT_BACKGROUND_BY_MODE[reactFlowColorMode],
+      }}
+    >
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        fitView
+        colorMode={reactFlowColorMode}
+      >
+        <Background />
+        <Controls />
+      </ReactFlow>
+    </Box>
+  );
 
   return (
     <Stack component="section" id="topology" spacing={2} sx={{ scrollMarginTop: 144 }}>
@@ -234,37 +336,24 @@ export default function TopologySection() {
           Vue topologique des collecteurs, des sources et de leurs alertes associées.
         </Typography>
       </Stack>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField
-          label="Sources distinctes min."
-          type="number"
-          size="small"
-          value={minDistinctSourceCount}
-          slotProps={{
-            htmlInput: { min: 2 },
-          }}
-          onChange={(event) => {
-            const nextValue = Number(event.target.value);
-            setMinDistinctSourceCount(Number.isFinite(nextValue) && nextValue >= 2 ? nextValue : 2);
-            setHiddenAlertIds([]);
-            setHiddenAlertEdgeIds([]);
-          }}
-        />
-        <TextField
-          label="Limite alertes"
-          type="number"
-          size="small"
-          value={alertLimit}
-          slotProps={{
-            htmlInput: { min: 1, max: 500 },
-          }}
-          onChange={(event) => {
-            const nextValue = Number(event.target.value);
-            setAlertLimit(Number.isFinite(nextValue) && nextValue >= 1 ? Math.min(nextValue, 50) : 1);
-            setHiddenAlertIds([]);
-            setHiddenAlertEdgeIds([]);
-          }}
-        />
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={2}
+        sx={{ alignItems: { xs: 'stretch', md: 'center' }, justifyContent: 'space-between' }}
+      >
+        {renderFilterControls()}
+        <Stack direction="row" spacing={1} sx={{ justifyContent: { xs: 'flex-end', md: 'initial' } }}>
+          <Tooltip title="Exporter en image">
+            <IconButton aria-label="Exporter la topologie en image" onClick={handleExportImage}>
+              <DownloadRoundedIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Agrandir">
+            <IconButton aria-label="Agrandir la topologie" onClick={() => setIsExpanded(true)}>
+              <OpenInFullRoundedIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
       </Stack>
 
       <Card variant="outlined">
@@ -279,21 +368,45 @@ export default function TopologySection() {
             <Alert severity="info">Les données sont vides.</Alert>
           ) : null}
           {!topologyQuery.isLoading && !topologyQuery.isError && !isEmpty ? (
-            <Box sx={{ height: 460, border: '1px solid', borderColor: 'divider' }}>
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={nodeTypes}
-                fitView
-                colorMode={reactFlowColorMode}
-              >
-                <Background />
-                <Controls />
-              </ReactFlow>
-            </Box>
+            graphContent(flowContainerRef, 460)
           ) : null}
         </CardContent>
       </Card>
+      <Dialog fullScreen open={isExpanded} onClose={() => setIsExpanded(false)}>
+        <DialogTitle>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            sx={{ alignItems: { xs: 'stretch', md: 'center' }, justifyContent: 'space-between' }}
+          >
+            <Typography component="span" variant="h6">
+              Topologie
+            </Typography>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              sx={{ alignItems: { xs: 'stretch', md: 'center' } }}
+            >
+              {renderFilterControls()}
+              <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
+                <Tooltip title="Exporter en image">
+                  <IconButton aria-label="Exporter la topologie agrandie en image" onClick={handleExportImage}>
+                    <DownloadRoundedIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Réduire">
+                  <IconButton aria-label="Réduire la topologie" onClick={() => setIsExpanded(false)}>
+                    <CloseFullscreenRoundedIcon />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            </Stack>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ p: 2 }}>
+          {graphContent(dialogFlowContainerRef, 'calc(100vh - 120px)')}
+        </DialogContent>
+      </Dialog>
     </Stack>
   );
 }
