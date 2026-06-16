@@ -3,9 +3,9 @@ import Alert from '@mui/material/Alert';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { fetchDashboardOverview } from '../../../../api/dashboard';
+import { fetchDashboardOverview } from './api/api';
 import StatCard from '../../../../components/cards/StatCard';
-import type { DashboardOverview } from '../../../../types/dashboard';
+import type { DashboardOverview } from './types/types';
 
 function formatCount(value: number | undefined) {
   if (value == null) {
@@ -58,7 +58,7 @@ export default function OverviewSection() {
           Aperçu global
         </Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Vue synthétique fournie directement par le backend.
+          Vue synthétique prenant en compte l'ensemble de la base de donnée.
         </Typography>
       </Stack>
       <Grid container spacing={2} columns={12}>
