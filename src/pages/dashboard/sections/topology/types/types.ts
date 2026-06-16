@@ -1,10 +1,3 @@
-export type DashboardOverview = {
-  total_attacks: number;
-  total_common_ip_alerts: number;
-  total_active_sources: number;
-  total_inactive_sources: number;
-};
-
 export type DashboardTopologyCollector = {
   id: number;
   name: string;
@@ -14,6 +7,10 @@ export type DashboardTopologyCollector = {
   last_validation_status: string | null;
   last_validation_at: string | null;
   last_validation_error: string | null;
+};
+
+export type CollectorNodeData = {
+  collector: DashboardTopologyCollector;
 };
 
 export type DashboardTopologySource = {
@@ -39,9 +36,37 @@ export type DashboardTopologySource = {
   last_collection_error_message: string | null;
 };
 
+export type SourceNodeData = {
+  source: DashboardTopologySource;
+};
+
+export type DashboardTopologyAlert = {
+  alert_id: number;
+  attacker_ip: string;
+  distinct_source_count: number;
+  first_seen_at: string;
+  last_seen_at: string;
+};
+
+export type AlertNodeData = {
+  alert: DashboardTopologyAlert;
+  hidden: boolean;
+  onToggleVisibility: (alertId: number) => void;
+};
+
+export type DashboardTopologyAlertLink = {
+  alert_id: number;
+  source_id: number;
+  first_seen_at: string;
+  last_seen_at: string;
+  hit_count: number;
+};
+
 export type DashboardTopologyResponse = {
   collectors: DashboardTopologyCollector[];
   sources: DashboardTopologySource[];
+  alerts: DashboardTopologyAlert[];
+  alert_links: DashboardTopologyAlertLink[];
 };
 
 export type DashboardSectionId =
@@ -49,10 +74,14 @@ export type DashboardSectionId =
   | 'topology'
   | 'charts'
   | 'alerts'
-  | 'attacks'
-  | 'sources';
+  | 'attacks';
 
 export type DashboardSectionLink = {
   id: DashboardSectionId;
   label: string;
 };
+
+{/* Constantes pour la taille des nodes */}
+export const MAX_HEIGHT_NODE = 150;
+/* Constantes pour le décalage des nodes */
+export const OFFSET = 10;

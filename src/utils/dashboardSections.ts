@@ -1,4 +1,4 @@
-import type { DashboardSectionLink } from '../types/dashboard';
+import type { DashboardSectionLink } from '../pages/dashboard/sections/topology/types/types';
 
 export const DASHBOARD_SECTION_LINKS: DashboardSectionLink[] = [
   { id: 'overview', label: 'Aperçu global' },
