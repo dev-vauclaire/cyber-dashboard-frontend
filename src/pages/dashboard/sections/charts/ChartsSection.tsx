@@ -10,12 +10,12 @@ import Typography from '@mui/material/Typography';
 import CustomDatePicker from '../../../../components/filters/CustomDatePicker';
 import LinearChart from '../../../../components/charts/LinearChart';
 import SourceDistributionChart from '../../../../components/charts/SourceDistributionChart';
-import { fetchAttacksBySource, fetchAttacksBySourceTimeseries } from '../../../../api/stats';
+import { fetchAttacksBySource, fetchAttacksBySourceTimeseries } from './api/stats';
 import type {
   AttackStatsDateRangeQuery,
   AttacksBySourceResponse,
   AttacksBySourceTimeseriesResponse,
-} from '../../../../types/stats';
+} from './types/stats';
 import {
   buildParisDayBoundaryUtcIso,
   formatDateToParisDayLabel,
