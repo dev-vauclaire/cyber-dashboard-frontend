@@ -18,6 +18,9 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useColorScheme } from '@mui/material/styles';
+import Button from '@mui/material/Button';
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+
 import {
   Background,
   Controls,
@@ -140,23 +143,38 @@ export default function TopologySection() {
     }));
     const alertYById = getSpacedPositionsByPreferredY(alertPreferredPositions, ALERT_ROW_GAP);
 
+    let indexForCollectorNotLinked = 0;
+
     const collectorNodes: Node<CollectorNodeData, 'collector'>[] = collectors.map(
-      (collector, index) => ({
-        id: `collector-${collector.id}`,
-        type: 'collector',
-        position: {
-          x: COLLECTOR_X,
-          y: getAveragePosition(
-            sources
-              .filter((source) => source.collector_id === collector.id)
-              .map((source) => sourceYById.get(source.source_id))
-              .filter((position): position is number => position != null),
-            index * COLLECTOR_ROW_GAP,
-          ),
-        },
-        data: { collector },
-      }),
+      (collector) => {
+        const sourcePositions = sources
+          .filter((source) => source.collector_id === collector.id)
+          .map((source) => sourceYById.get(source.source_id))
+          .filter((position): position is number => position != null);
+
+        const fallbackY = indexForCollectorNotLinked * COLLECTOR_ROW_GAP * -1;
+
+        const y =
+          sourcePositions.length > 0
+            ? getAveragePosition(sourcePositions, fallbackY)
+            : fallbackY;
+
+        if (sourcePositions.length === 0) {
+          indexForCollectorNotLinked += 1;
+        }
+
+        return {
+          id: `collector-${collector.id}`,
+          type: 'collector',
+          position: {
+            x: COLLECTOR_X,
+            y,
+          },
+          data: { collector },
+        };
+      },
     );
+
     {/* Calcul la position des sources */}
     const sourceNodes: Node<SourceNodeData, 'source'>[] = sources.map((source, index) => ({
       id: `source-${source.source_id}`,
@@ -326,6 +344,12 @@ export default function TopologySection() {
     </Box>
   );
 
+  const handleRefresh = () => {
+    topologyQuery.refetch();
+    setHiddenAlertIds([]);
+    setHiddenAlertEdgeIds([]);
+  }
+
   return (
     <Stack component="section" id="topology" spacing={2} sx={{ scrollMarginTop: 144 }}>
       <Stack spacing={0.5}>
@@ -343,6 +367,14 @@ export default function TopologySection() {
       >
         {renderFilterControls()}
         <Stack direction="row" spacing={1} sx={{ justifyContent: { xs: 'flex-end', md: 'initial' } }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<RefreshRoundedIcon fontSize="small" />}
+              onClick={handleRefresh}
+            >
+              Rafraîchir
+            </Button>
           <Tooltip title="Exporter en image">
             <IconButton aria-label="Exporter la topologie en image" onClick={handleExportImage}>
               <DownloadRoundedIcon />

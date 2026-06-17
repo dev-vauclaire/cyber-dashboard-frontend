@@ -1,6 +1,3 @@
-const OGO_WEB_BASE_URL = 'https://ogo.example.local';
-const SERENICITY_WEB_BASE_URL = 'https://serenicity.example.local';
-
 type SourceExternalLinkInput = {
   collectorType?: string | null;
   sensorTypeCode?: string | null;
