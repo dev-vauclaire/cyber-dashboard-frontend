@@ -20,6 +20,7 @@ import Typography from '@mui/material/Typography';
 import { useColorScheme } from '@mui/material/styles';
 import Button from '@mui/material/Button';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 import {
   Background,
@@ -39,18 +40,9 @@ import type { SourceNodeData } from './types/types';
 import type { CollectorNodeData } from './types/types';
 import type { AlertNodeData } from './types/types';
 
-import { MAX_HEIGHT_NODE, OFFSET } from './types/types';
-
+import { dashboardQueryKeys } from '../../utils/queryKeys';
+import { COLLECTOR_X, SOURCE_X, ALERT_X, ROW_GAP, DEFAULT_MIN_DISTINCT_SOURCE_COUNT, DEFAULT_ALERT_LIMIT} from './utils/constants';
 import { getAveragePosition, getSpacedPositionsByPreferredY, exportElementAsPng } from './utils/utils';
-
-const COLLECTOR_X = 0;
-const SOURCE_X = 460;
-const ALERT_X = 1300;
-const SOURCE_ROW_GAP = OFFSET + MAX_HEIGHT_NODE;
-const ALERT_ROW_GAP = OFFSET + MAX_HEIGHT_NODE;
-const COLLECTOR_ROW_GAP = OFFSET + MAX_HEIGHT_NODE;
-const DEFAULT_MIN_DISTINCT_SOURCE_COUNT = 3;
-const DEFAULT_ALERT_LIMIT = 20;
 
 const EXPORT_BACKGROUND_BY_MODE = {
   dark: '#0B1020',
@@ -85,10 +77,12 @@ export default function TopologySection() {
   const [hiddenAlertIds, setHiddenAlertIds] = useState<number[]>([]);
   const [hiddenAlertEdgeIds, setHiddenAlertEdgeIds] = useState<string[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isTopologySwapped, setIsTopologySwapped] = useState(true);
   const flowContainerRef = useRef<HTMLDivElement | null>(null);
   const dialogFlowContainerRef = useRef<HTMLDivElement | null>(null);
+
   const topologyQuery = useQuery({
-    queryKey: ['dashboardTopology', minDistinctSourceCount, alertLimit],
+    queryKey: dashboardQueryKeys.dashboardTopology(minDistinctSourceCount, alertLimit),
     queryFn: () =>
       fetchDashboardTopology({
         alertLimit,
@@ -96,40 +90,57 @@ export default function TopologySection() {
       }),
   });
 
+  {/* Permet de cacher toutes les alertes et leurs liens sauf celle de l'alerte sélectionnée */}
   const handleToggleAlertVisibility = useCallback((alertId: number) => {
     const alertLinks = topologyQuery.data?.alert_links ?? [];
-    const relatedEdgeIds = alertLinks
-      .filter((link) => link.alert_id === alertId)
+    const edgeIdsToHide = alertLinks
+      .filter((link) => link.alert_id !== alertId)
       .map((link) => `source-${link.source_id}-alert-${link.alert_id}`);
 
-    setHiddenAlertIds((currentIds) =>
-      currentIds.includes(alertId)
-        ? currentIds.filter((currentId) => currentId !== alertId)
-        : [...currentIds, alertId],
-    );
-    setHiddenAlertEdgeIds((currentIds) => {
-      const currentIdSet = new Set(currentIds);
-      const shouldShow =
-        relatedEdgeIds.length > 0 && relatedEdgeIds.every((edgeId) => currentIdSet.has(edgeId));
+    const alerts = topologyQuery.data?.alerts ?? [];
+    const alertIdsToHide = alerts
+      .filter((alert) => alert.alert_id !== alertId)
+      .map((alert) => alert.alert_id);
 
-      if (shouldShow) {
-        return currentIds.filter((currentId) => !relatedEdgeIds.includes(currentId));
+    setHiddenAlertIds((currentIds) => {
+      const currentIdSet = new Set(currentIds);
+      const shouldShowAll =
+        alertIdsToHide.length > 0 &&
+        alertIdsToHide.every((id) => currentIdSet.has(id)) &&
+        !currentIdSet.has(alertId);
+
+      if (shouldShowAll) {
+        return [];
       }
 
-      return Array.from(new Set([...currentIds, ...relatedEdgeIds]));
+      return alertIdsToHide;
     });
-  }, [topologyQuery.data?.alert_links]);
+
+    setHiddenAlertEdgeIds((currentIds) => {
+      const currentIdSet = new Set(currentIds);
+      const shouldShowAll =
+        edgeIdsToHide.length > 0 && edgeIdsToHide.every((edgeId) => currentIdSet.has(edgeId));
+
+      if (shouldShowAll) {
+        return [];
+      }
+
+      return edgeIdsToHide;
+    });
+  }, [topologyQuery.data?.alert_links, topologyQuery.data?.alerts]);
 
   const baseGraph = useMemo(() => {
     const collectors = topologyQuery.data?.collectors ?? [];
     const sources = topologyQuery.data?.sources ?? [];
     const alerts = topologyQuery.data?.alerts ?? [];
     const alertLinks = topologyQuery.data?.alert_links ?? [];
+    const getTopologyX = (x: number) => (isTopologySwapped ? x * -1 : x);
+
     const sourceYById = new Map(
-      sources.map((source, index) => [source.source_id, index * SOURCE_ROW_GAP]),
+      sources.map((source, index) => [source.source_id, index * ROW_GAP]),
     );
     const alertFallbackYById = new Map(
-      alerts.map((alert, index) => [alert.alert_id, index * ALERT_ROW_GAP]),
+      alerts.map((alert, index) => [alert.alert_id, index * ROW_GAP]),
     );
     const alertPreferredPositions = alerts.map((alert, index) => ({
       id: alert.alert_id,
@@ -138,10 +149,10 @@ export default function TopologySection() {
           .filter((link) => link.alert_id === alert.alert_id)
           .map((link) => sourceYById.get(link.source_id))
           .filter((position): position is number => position != null),
-        alertFallbackYById.get(alert.alert_id) ?? index * ALERT_ROW_GAP,
+        alertFallbackYById.get(alert.alert_id) ?? index * ROW_GAP,
       ),
     }));
-    const alertYById = getSpacedPositionsByPreferredY(alertPreferredPositions, ALERT_ROW_GAP);
+    const alertYById = getSpacedPositionsByPreferredY(alertPreferredPositions, ROW_GAP);
 
     let indexForCollectorNotLinked = 0;
 
@@ -152,7 +163,7 @@ export default function TopologySection() {
           .map((source) => sourceYById.get(source.source_id))
           .filter((position): position is number => position != null);
 
-        const fallbackY = indexForCollectorNotLinked * COLLECTOR_ROW_GAP * -1;
+        const fallbackY = indexForCollectorNotLinked * ROW_GAP * -1;
 
         const y =
           sourcePositions.length > 0
@@ -167,10 +178,10 @@ export default function TopologySection() {
           id: `collector-${collector.id}`,
           type: 'collector',
           position: {
-            x: COLLECTOR_X,
+            x: getTopologyX(COLLECTOR_X),
             y,
           },
-          data: { collector },
+          data: { collector, isTopologySwapped },
         };
       },
     );
@@ -179,20 +190,21 @@ export default function TopologySection() {
     const sourceNodes: Node<SourceNodeData, 'source'>[] = sources.map((source, index) => ({
       id: `source-${source.source_id}`,
       type: 'source',
-      position: { x: SOURCE_X, y: sourceYById.get(source.source_id) ?? index * SOURCE_ROW_GAP },
-      data: { source },
+      position: { x: getTopologyX(SOURCE_X), y: sourceYById.get(source.source_id) ?? index * ROW_GAP },
+      data: { source, isTopologySwapped },
     }));
     {/* Calcul la position des alertes */}
     const alertNodes: Node<AlertNodeData, 'alert'>[] = alerts.map((alert, index) => ({
       id: `alert-${alert.alert_id}`,
       type: 'alert',
       position: {
-        x: ALERT_X,
-        y: alertYById.get(alert.alert_id) ?? index * ALERT_ROW_GAP,
+        x: getTopologyX(ALERT_X),
+        y: alertYById.get(alert.alert_id) ?? index * ROW_GAP,
       },
       data: {
         alert,
         hidden: false,
+        isTopologySwapped,
         onToggleVisibility: handleToggleAlertVisibility,
       },
     }));
@@ -224,7 +236,7 @@ export default function TopologySection() {
       nodes: [...collectorNodes, ...sourceNodes, ...alertNodes],
       edges: [...topologyEdges, ...alertEdges],
     };
-  }, [edgeColors, handleToggleAlertVisibility, topologyQuery.data]);
+  }, [edgeColors, handleToggleAlertVisibility, isTopologySwapped, topologyQuery.data]);
 
   const hiddenAlertIdSet = useMemo(() => new Set(hiddenAlertIds), [hiddenAlertIds]);
   const hiddenAlertEdgeIdSet = useMemo(() => new Set(hiddenAlertEdgeIds), [hiddenAlertEdgeIds]);
@@ -253,6 +265,10 @@ export default function TopologySection() {
       }),
     [baseGraph.nodes, hiddenAlertIdSet],
   );
+
+  const handleToggleSwapTopologySide = () => {
+    setIsTopologySwapped((currentValue) => !currentValue);
+  };
 
   const edges = useMemo(
     () =>
@@ -286,39 +302,68 @@ export default function TopologySection() {
   }, [isExpanded, reactFlowColorMode]);
 
   const isEmpty = !topologyQuery.isLoading && nodes.length === 0;
-  const renderFilterControls = () => (
-    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-      <TextField
-        label="Sources distinctes min."
-        type="number"
-        size="small"
-        value={minDistinctSourceCount}
-        slotProps={{
-          htmlInput: { min: 2 },
-        }}
-        onChange={(event) => {
-          const nextValue = Number(event.target.value);
-          setMinDistinctSourceCount(Number.isFinite(nextValue) && nextValue >= 2 ? nextValue : 2);
-          setHiddenAlertIds([]);
-          setHiddenAlertEdgeIds([]);
-        }}
-      />
-      <TextField
-        label="Limite alertes"
-        type="number"
-        size="small"
-        value={alertLimit}
-        slotProps={{
-          htmlInput: { min: 1, max: 500 },
-        }}
-        onChange={(event) => {
-          const nextValue = Number(event.target.value);
-          setAlertLimit(Number.isFinite(nextValue) && nextValue >= 1 ? Math.min(nextValue, 50) : 1);
-          setHiddenAlertIds([]);
-          setHiddenAlertEdgeIds([]);
-        }}
-      />
-    </Stack>
+
+  {/* Affiche les outils pour filtrer : sources distinctes et limites d'alertes */}
+  const renderFilterControls = ({isExpanded}: {isExpanded: boolean  }) => (
+    <>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <TextField
+          label="Sources distinctes min."
+          type="number"
+          size="small"
+          value={minDistinctSourceCount}
+          slotProps={{
+            htmlInput: { min: 2 },
+          }}
+          onChange={(event) => {
+            const nextValue = Number(event.target.value);
+            setMinDistinctSourceCount(Number.isFinite(nextValue) && nextValue >= 2 ? nextValue : 2);
+            setHiddenAlertIds([]);
+            setHiddenAlertEdgeIds([]);
+          }}
+        />
+        <TextField
+          label="Limite alertes"
+          type="number"
+          size="small"
+          value={alertLimit}
+          slotProps={{
+            htmlInput: { min: 1, max: 500 },
+          }}
+          onChange={(event) => {
+            const nextValue = Number(event.target.value);
+            setAlertLimit(Number.isFinite(nextValue) && nextValue >= 1 ? Math.min(nextValue, 50) : 1);
+            setHiddenAlertIds([]);
+            setHiddenAlertEdgeIds([]);
+          }}
+        />
+      </Stack>
+      <Stack direction="row" spacing={1} sx={{ justifyContent: { xs: 'flex-end', md: 'initial' } }}>
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<RefreshRoundedIcon fontSize="small" />}
+          onClick={handleRefresh}
+        >
+          Rafraîchir
+        </Button>
+        <Tooltip title="Inverser les côtés de la topologie">
+          <IconButton aria-label="Inverser les côtés de la topologie" onClick={handleToggleSwapTopologySide}>
+            <SwapHorizIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Exporter en image">
+          <IconButton aria-label="Exporter la topologie en image" onClick={handleExportImage}>
+            <DownloadRoundedIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={isExpanded ? "Réduire" : "Agrandir"}>
+          <IconButton aria-label={isExpanded ? "Réduire la topologie" : "Agrandir la topologie"} onClick={() => setIsExpanded(isExpanded => !isExpanded)}>
+            {isExpanded ? <CloseFullscreenRoundedIcon /> : <OpenInFullRoundedIcon />}
+          </IconButton>
+        </Tooltip>
+      </Stack>
+    </>
   );
 
   const graphContent = (containerRef: React.RefObject<HTMLDivElement | null>, height: number | string) => (
@@ -332,6 +377,7 @@ export default function TopologySection() {
       }}
     >
       <ReactFlow
+        key={isTopologySwapped ? 'topology-swapped' : 'topology-default'}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
@@ -365,29 +411,8 @@ export default function TopologySection() {
         spacing={2}
         sx={{ alignItems: { xs: 'stretch', md: 'center' }, justifyContent: 'space-between' }}
       >
-        {renderFilterControls()}
-        <Stack direction="row" spacing={1} sx={{ justifyContent: { xs: 'flex-end', md: 'initial' } }}>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<RefreshRoundedIcon fontSize="small" />}
-              onClick={handleRefresh}
-            >
-              Rafraîchir
-            </Button>
-          <Tooltip title="Exporter en image">
-            <IconButton aria-label="Exporter la topologie en image" onClick={handleExportImage}>
-              <DownloadRoundedIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Agrandir">
-            <IconButton aria-label="Agrandir la topologie" onClick={() => setIsExpanded(true)}>
-              <OpenInFullRoundedIcon />
-            </IconButton>
-          </Tooltip>
-        </Stack>
+        {renderFilterControls({ isExpanded: false })}
       </Stack>
-
       <Card variant="outlined">
         <CardContent>
           {topologyQuery.isLoading ? <Skeleton variant="rounded" height={420} /> : null}
@@ -419,19 +444,7 @@ export default function TopologySection() {
               spacing={2}
               sx={{ alignItems: { xs: 'stretch', md: 'center' } }}
             >
-              {renderFilterControls()}
-              <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
-                <Tooltip title="Exporter en image">
-                  <IconButton aria-label="Exporter la topologie agrandie en image" onClick={handleExportImage}>
-                    <DownloadRoundedIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Réduire">
-                  <IconButton aria-label="Réduire la topologie" onClick={() => setIsExpanded(false)}>
-                    <CloseFullscreenRoundedIcon />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
+            {renderFilterControls({ isExpanded: true })}
             </Stack>
           </Stack>
         </DialogTitle>

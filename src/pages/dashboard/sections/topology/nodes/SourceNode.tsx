@@ -13,22 +13,22 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 
-import { getSourceLogo } from '../utils/sourceLogo';
+import { getSourceLogo } from '../../../../../utils/logo';
 import type { SourceNodeData } from '../types/types';
-import { MAX_HEIGHT_NODE } from '../types/types';
+import { MAX_HEIGHT_NODE, MAX_WIDTH_NODE, MIN_WIDTH_NODE, MIN_HEIGHT_NODE } from '../utils/constants';
 
 
 { /* Node représentant une source */ }
 export default function SourceNode({ data }: NodeProps<Node<SourceNodeData, 'source'>>) {
-  const { source } = data;
+  const { source, isTopologySwapped } = data;
   const sourceLogo = getSourceLogo(source.sensor_type_code);
   const hasSyncError =
     source.last_inventory_status === 'failed' || source.last_collection_status === 'failed';
 
   return (
-    <Card variant="outlined" sx={{ minWidth: 240, borderRadius: 1, maxHeight: MAX_HEIGHT_NODE }}>
-      <Handle type="target" position={Position.Left} />
-      <Handle type="source" position={Position.Right} />
+    <Card variant="outlined" sx={{ minWidth: MIN_WIDTH_NODE, minHeight: MIN_HEIGHT_NODE, maxWidth: MAX_WIDTH_NODE, maxHeight: MAX_HEIGHT_NODE, borderRadius: 1 }}>
+      <Handle type="target" position={isTopologySwapped ? Position.Right : Position.Left} />
+      <Handle type="source" position={isTopologySwapped ? Position.Left : Position.Right} />
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Stack spacing={1}>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>

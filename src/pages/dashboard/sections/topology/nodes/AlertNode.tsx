@@ -17,24 +17,26 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import type { AlertNodeData } from '../types/types';
-import { MAX_HEIGHT_NODE } from '../types/types';
+import { MAX_HEIGHT_NODE, MAX_WIDTH_NODE, MIN_WIDTH_NODE, MIN_HEIGHT_NODE } from '../utils/constants';
 
 { /* Node représentant une alerte */ }
 export default function AlertNode({ data }: NodeProps<Node<AlertNodeData, 'alert'>>) {
-  const { alert, hidden, onToggleVisibility } = data;
+  const { alert, hidden, isTopologySwapped, onToggleVisibility } = data;
 
   return (
     <Card
       variant="outlined"
       sx={{
-        minWidth: 230,
+        minWidth: MIN_WIDTH_NODE,
+        minHeight: MIN_HEIGHT_NODE,
         maxHeight: MAX_HEIGHT_NODE,
+        maxWidth: MAX_WIDTH_NODE,
         opacity: hidden ? 0.4 : 1,
         borderRadius: 1,
         borderColor: alert.distinct_source_count >= 5 ? 'error.main' : 'warning.main',
       }}
     >
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={isTopologySwapped ? Position.Right : Position.Left} />
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Stack spacing={1}>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
@@ -44,9 +46,13 @@ export default function AlertNode({ data }: NodeProps<Node<AlertNodeData, 'alert
                 {alert.attacker_ip}
               </Typography>
             </Stack>
-            <Tooltip title={hidden ? 'Afficher les liens' : 'Masquer les liens'}>
+            <Tooltip title={hidden ? 'Afficher uniquement cette alerte' : 'Isoler cette alerte'}>
               <IconButton
-                aria-label={hidden ? 'Afficher les liens de cette alerte' : 'Masquer les liens de cette alerte'}
+                aria-label={
+                  hidden
+                    ? 'Afficher uniquement cette alerte'
+                    : 'Isoler cette alerte et masquer les autres'
+                }
                 size="small"
                 onClick={() => onToggleVisibility(alert.alert_id)}
               >

@@ -11,6 +11,7 @@ export type DashboardTopologyCollector = {
 
 export type CollectorNodeData = {
   collector: DashboardTopologyCollector;
+  isTopologySwapped: boolean;
 };
 
 export type DashboardTopologySource = {
@@ -38,6 +39,7 @@ export type DashboardTopologySource = {
 
 export type SourceNodeData = {
   source: DashboardTopologySource;
+  isTopologySwapped: boolean;
 };
 
 export type DashboardTopologyAlert = {
@@ -51,6 +53,7 @@ export type DashboardTopologyAlert = {
 export type AlertNodeData = {
   alert: DashboardTopologyAlert;
   hidden: boolean;
+  isTopologySwapped: boolean;
   onToggleVisibility: (alertId: number) => void;
 };
 
@@ -80,8 +83,3 @@ export type DashboardSectionLink = {
   id: DashboardSectionId;
   label: string;
 };
-
-{/* Constantes pour la taille des nodes */}
-export const MAX_HEIGHT_NODE = 150;
-/* Constantes pour le décalage des nodes */
-export const OFFSET = 10;

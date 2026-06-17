@@ -14,9 +14,9 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 
-import { getCollectorLogo } from '../utils/collectorLogos';
+import { getCollectorLogo } from '../../../../../utils/logo';
 import type { CollectorNodeData } from '../types/types';
-import { MAX_HEIGHT_NODE } from '../types/types';
+import { MAX_HEIGHT_NODE, MAX_WIDTH_NODE, MIN_WIDTH_NODE, MIN_HEIGHT_NODE } from '../utils/constants';
 
 function statusColor(status: string | null | undefined): 'default' | 'error' | 'success' | 'warning' {
   if (status === 'success') {
@@ -33,12 +33,12 @@ function statusColor(status: string | null | undefined): 'default' | 'error' | '
 
 { /* Node représentant un collecteur */ }
 export default function CollectorNode({ data }: NodeProps<Node<CollectorNodeData, 'collector'>>) {
-  const { collector } = data;
+  const { collector, isTopologySwapped } = data;
   const collectorLogo = getCollectorLogo(collector.collector_type);
 
   return (
-    <Card variant="outlined" sx={{ minWidth: 220, borderRadius: 1, maxHeight: MAX_HEIGHT_NODE }}>
-      <Handle type="source" position={Position.Right} />
+    <Card variant="outlined" sx={{ minWidth: MIN_WIDTH_NODE, minHeight: MIN_HEIGHT_NODE, maxWidth: MAX_WIDTH_NODE, maxHeight: MAX_HEIGHT_NODE, borderRadius: 1 }}>
+      <Handle type="source" position={isTopologySwapped ? Position.Left : Position.Right} />
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Stack spacing={1}>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
