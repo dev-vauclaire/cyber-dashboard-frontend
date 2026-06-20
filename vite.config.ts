@@ -14,6 +14,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        '/health': {
+          target: backendUrl,
+          changeOrigin: true,
+          secure: false,
+        },
       },
       port: 5174,
     },
