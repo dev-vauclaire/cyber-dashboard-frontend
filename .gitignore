@@ -29,5 +29,4 @@ dist-ssr
 !.env.example
 
 # Local-only documents
-README.md
 api_doc.md
