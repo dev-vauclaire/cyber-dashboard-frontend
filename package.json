@@ -1,13 +1,16 @@
 {
-  "name": "front_refactor",
+  "name": "cyber-dashboard-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "license": "EUPL-1.2",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -16,20 +19,20 @@
     "@mui/material": "^7.3.9",
     "@mui/x-charts": "^8.28.2",
     "@mui/x-data-grid": "^8.28.2",
-    "@mui/x-data-grid-pro": "^8.28.2",
     "@mui/x-date-pickers": "^8.27.2",
-    "@mui/x-date-pickers-pro": "^8.27.2",
-    "@mui/x-tree-view": "^8.27.2",
     "@react-spring/web": "^10.0.3",
     "@tanstack/react-query": "^5.96.2",
     "@xyflow/react": "^12.11.0",
     "dayjs": "^1.11.20",
     "react": "^19.2.4",
+    "react-copy-to-clipboard": "^5.1.1",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.17.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -38,8 +41,14 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "jsdom": "^29.1.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
-    "vite": "^8.0.1"
-  }
+    "vite": "^8.0.1",
+    "vitest": "^4.1.9"
+  },
+  "engines": {
+    "node": "^24.17.0"
+  },
+  "packageManager": "npm@11.13.0"
 }
