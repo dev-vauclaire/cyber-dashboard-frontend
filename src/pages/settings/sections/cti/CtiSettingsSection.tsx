@@ -141,10 +141,22 @@ export default function CtiSettingsSection() {
           Fournisseurs CTI
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Configure les clés, vérifie leur validité et contrôle l&apos;activation de chaque
-          fournisseur d&apos;enrichissement.
+          Configure, valide et active indépendamment chaque fournisseur d&apos;enrichissement.
         </Typography>
       </Stack>
+
+      {successMessage ? (
+        <Alert severity="success" onClose={() => setSuccessMessage(null)}>
+          {successMessage}
+        </Alert>
+      ) : null}
+
+      {mutation.isError && mutation.variables?.action !== 'delete-key' ? (
+        <Alert severity="error">
+          Impossible d&apos;effectuer cette action.{' '}
+          {mutation.error instanceof Error ? mutation.error.message : ''}
+        </Alert>
+      ) : null}
 
       <Grid container spacing={2}>
         {configs.map((config) => {
