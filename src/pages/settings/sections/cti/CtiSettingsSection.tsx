@@ -1,14 +1,10 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
-import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Grid from '@mui/material/Grid';
+import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import {
   activateCtiConfig,
@@ -16,115 +12,195 @@ import {
   deleteCtiApiKey,
   fetchCtiConfigs,
   patchCtiConfig,
-} from '../../../../api/cti';
-import ValidationStatusChip from '../../components/ValidationStatusChip';
+} from '../../../../shared/cti/ctiApi';
+import { ctiQueryKeys } from '../../../../shared/cti/queryKeys';
+import type { CtiConfig } from '../../../../shared/cti/types';
+import CtiConfigCard from './components/CtiConfigCard';
+import DeleteCtiApiKeyDialog from './components/DeleteCtiApiKeyDialog';
+import type { CtiAction } from './types/ctiSettingsTypes';
 
-type CtiAction = {
-  code: string;
-  action: 'activate' | 'deactivate' | 'delete-key' | 'save-key';
-  apiKey?: string;
-};
+function getSuccessMessage(action: CtiAction): string {
+  if (action.action === 'validate') {
+    return `${action.label} a été validé avec succès.`;
+  }
+  if (action.action === 'activate') {
+    return `${action.label} a été activé.`;
+  }
+  if (action.action === 'deactivate') {
+    return `${action.label} a été désactivé.`;
+  }
+  return `La clé API de ${action.label} a été supprimée.`;
+}
 
 export default function CtiSettingsSection() {
   const queryClient = useQueryClient();
-  const configsQuery = useQuery({ queryKey: ['ctiConfigs'], queryFn: fetchCtiConfigs });
+  const configsQuery = useQuery({
+    queryKey: ctiQueryKeys.configs,
+    queryFn: fetchCtiConfigs,
+  });
   const [apiKeys, setApiKeys] = React.useState<Record<string, string>>({});
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [keyToDelete, setKeyToDelete] = React.useState<CtiConfig | null>(null);
+
   const mutation = useMutation({
-    mutationFn: async ({ code, action, apiKey }: CtiAction) => {
-      if (action === 'activate') return activateCtiConfig(code);
-      if (action === 'deactivate') return deactivateCtiConfig(code);
-      if (action === 'delete-key') return deleteCtiApiKey(code);
-      return patchCtiConfig(code, { api_key: apiKey });
+    mutationFn: async (input: CtiAction) => {
+      if (input.action === 'validate') {
+        const normalizedApiKey = input.apiKey?.trim();
+
+        if (normalizedApiKey) {
+          await patchCtiConfig(input.code, { api_key: normalizedApiKey });
+        }
+
+        return activateCtiConfig(input.code);
+      }
+      if (input.action === 'activate') {
+        return activateCtiConfig(input.code);
+      }
+      if (input.action === 'deactivate') {
+        return deactivateCtiConfig(input.code);
+      }
+      return deleteCtiApiKey(input.code);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ctiConfigs'] }),
+    onMutate: () => {
+      setSuccessMessage(null);
+    },
+    onSuccess: (_data, variables) => {
+      setSuccessMessage(getSuccessMessage(variables));
+
+      if (variables.action === 'validate' || variables.action === 'delete-key') {
+        setApiKeys((current) => {
+          const next = { ...current };
+          delete next[variables.code];
+          return next;
+        });
+      }
+
+      if (variables.action === 'delete-key') {
+        setKeyToDelete(null);
+      }
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ctiQueryKeys.configs });
+    },
   });
 
-  return (
-    <Stack spacing={2}>
-      {mutation.isError ? <Alert severity="warning">{mutation.error.message}</Alert> : null}
-      {configsQuery.isError ? (
-        <Alert severity="warning">Impossible de charger les configurations CTI.</Alert>
-      ) : null}
-      <Grid container spacing={2}>
-        {(configsQuery.data?.items ?? []).map((config) => (
-          <Grid key={config.code} size={{ xs: 12, md: 6 }}>
-            <Card variant="outlined" sx={{ height: '100%' }}>
-              <CardContent>
-                <Stack spacing={1.5}>
-                  <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 1 }}>
-                    <Typography variant="subtitle2">{config.label}</Typography>
-                    <ValidationStatusChip status={config.last_validation_status} />
-                  </Stack>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    {config.has_api_key
-                      ? `Clé enregistrée ${config.api_key_hint ?? ''}`
-                      : 'Aucune clé enregistrée'}
-                  </Typography>
-                  {config.is_key_required ? (
-                    <TextField
-                      size="small"
-                      label="Nouvelle clé API"
-                      type="password"
-                      value={apiKeys[config.code] ?? ''}
-                      onChange={(event) =>
-                        setApiKeys((current) => ({
-                          ...current,
-                          [config.code]: event.target.value,
-                        }))
-                      }
-                    />
-                  ) : null}
-                  {config.last_validation_error ? (
-                    <Alert severity="warning">{config.last_validation_error}</Alert>
-                  ) : null}
-                  <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-                    {config.is_key_required ? (
-                      <Button
-                        size="small"
-                        startIcon={<SaveRoundedIcon fontSize="small" />}
-                        disabled={(apiKeys[config.code] ?? '').trim() === ''}
-                        onClick={() =>
-                          mutation.mutate({
-                            code: config.code,
-                            action: 'save-key',
-                            apiKey: apiKeys[config.code],
-                          })
-                        }
-                      >
-                        Enregistrer
-                      </Button>
-                    ) : null}
-                    <Button
-                      size="small"
-                      variant={config.is_active ? 'outlined' : 'contained'}
-                      onClick={() =>
-                        mutation.mutate({
-                          code: config.code,
-                          action: config.is_active ? 'deactivate' : 'activate',
-                        })
-                      }
-                    >
-                      {config.is_active ? 'Désactiver' : 'Activer'}
-                    </Button>
-                    {config.has_api_key ? (
-                      <Button
-                        size="small"
-                        color="warning"
-                        startIcon={<DeleteOutlineRoundedIcon fontSize="small" />}
-                        onClick={() =>
-                          mutation.mutate({ code: config.code, action: 'delete-key' })
-                        }
-                      >
-                        Supprimer la clé
-                      </Button>
-                    ) : null}
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
+  function handleDeleteCancel() {
+    if (!mutation.isPending) {
+      mutation.reset();
+      setKeyToDelete(null);
+    }
+  }
+
+  function handleDeleteConfirm() {
+    if (keyToDelete) {
+      mutation.mutate({
+        action: 'delete-key',
+        code: keyToDelete.code,
+        label: keyToDelete.label,
+      });
+    }
+  }
+
+  if (configsQuery.isLoading) {
+    return (
+      <Grid container spacing={2} aria-label="Chargement des configurations CTI">
+        {[0, 1, 2, 3].map((item) => (
+          <Grid key={item} size={{ xs: 12, md: 6 }}>
+            <Skeleton variant="rounded" height={280} />
           </Grid>
         ))}
       </Grid>
+    );
+  }
+
+  if (configsQuery.isError) {
+    return (
+      <Alert
+        severity="error"
+        action={
+          <Button color="inherit" size="small" onClick={() => void configsQuery.refetch()}>
+            Réessayer
+          </Button>
+        }
+      >
+        Impossible de charger les configurations CTI.
+      </Alert>
+    );
+  }
+
+  const configs = configsQuery.data?.items ?? [];
+
+  if (configs.length === 0) {
+    return <Alert severity="info">Aucun fournisseur CTI n&apos;est configuré.</Alert>;
+  }
+
+  return (
+    <Stack component="section" spacing={2} aria-labelledby="cti-settings-title">
+      <Stack spacing={0.5}>
+        <Typography component="h2" variant="h5" id="cti-settings-title">
+          Fournisseurs CTI
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          Configure les clés, vérifie leur validité et contrôle l&apos;activation de chaque
+          fournisseur d&apos;enrichissement.
+        </Typography>
+      </Stack>
+
+      <Grid container spacing={2}>
+        {configs.map((config) => {
+          const isCurrentConfig =
+            mutation.isPending && mutation.variables?.code === config.code;
+
+          return (
+            <Grid key={config.code} size={{ xs: 12, md: 6 }}>
+              <CtiConfigCard
+                config={config}
+                draftApiKey={apiKeys[config.code] ?? ''}
+                isBusy={mutation.isPending}
+                pendingAction={isCurrentConfig ? mutation.variables.action : null}
+                onApiKeyChange={(value) =>
+                  setApiKeys((current) => ({ ...current, [config.code]: value }))
+                }
+                onValidate={(apiKey) =>
+                  mutation.mutate({
+                    action: 'validate',
+                    apiKey,
+                    code: config.code,
+                    label: config.label,
+                  })
+                }
+                onToggleActive={() =>
+                  mutation.mutate({
+                    action: config.is_active ? 'deactivate' : 'activate',
+                    code: config.code,
+                    label: config.label,
+                  })
+                }
+                onDeleteKey={() => {
+                  mutation.reset();
+                  setSuccessMessage(null);
+                  setKeyToDelete(config);
+                }}
+              />
+            </Grid>
+          );
+        })}
+      </Grid>
+
+      <DeleteCtiApiKeyDialog
+        open={keyToDelete !== null}
+        providerLabel={keyToDelete?.label ?? ''}
+        isDeleting={
+          mutation.isPending && mutation.variables?.action === 'delete-key'
+        }
+        errorMessage={
+          mutation.isError && mutation.variables?.action === 'delete-key'
+            ? mutation.error.message
+            : null
+        }
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+      />
     </Stack>
   );
 }
