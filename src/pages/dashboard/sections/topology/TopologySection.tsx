@@ -1,5 +1,5 @@
 import '@xyflow/react/dist/style.css';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, type RefObject } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import CloseFullscreenRoundedIcon from '@mui/icons-material/CloseFullscreenRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
@@ -30,19 +30,22 @@ import {
   type Edge,
   type Node,
 } from '@xyflow/react';
-import { fetchDashboardTopology } from './api/api';
+import { fetchDashboardTopology } from './api/topologyApi';
 
 import CollectorNode from './nodes/CollectorNode';
 import SourceNode from './nodes/SourceNode';
 import AlertNode from './nodes/AlertNode';
 
-import type { SourceNodeData } from './types/types';
-import type { CollectorNodeData } from './types/types';
-import type { AlertNodeData } from './types/types';
+import type { SourceNodeData } from './types/topologyTypes';
+import type { CollectorNodeData } from './types/topologyTypes';
+import type { AlertNodeData } from './types/topologyTypes';
 
 import { dashboardQueryKeys } from '../../utils/queryKeys';
 import { COLLECTOR_X, SOURCE_X, ALERT_X, ROW_GAP, DEFAULT_MIN_DISTINCT_SOURCE_COUNT, DEFAULT_ALERT_LIMIT} from './utils/constants';
-import { getAveragePosition, getSpacedPositionsByPreferredY, exportElementAsPng } from './utils/utils';
+import { exportElementAsPng } from './utils/exportPng';
+import { getAveragePosition, getSpacedPositionsByPreferredY } from './utils/layout';
+import { useSourceColorContext } from '../../../../shared/sources/providers/sourceColorContext';
+import { getSourceColor } from '../../../../shared/sources/utils/sourceColors';
 
 const EXPORT_BACKGROUND_BY_MODE = {
   dark: '#0B1020',
@@ -68,8 +71,51 @@ const nodeTypes = {
   alert: AlertNode,
 };
 
+type TopologyGraphProps = {
+  containerRef: RefObject<HTMLDivElement | null>;
+  edges: Edge[];
+  height: number | string;
+  isTopologySwapped: boolean;
+  nodes: Node[];
+  reactFlowColorMode: keyof typeof EXPORT_BACKGROUND_BY_MODE;
+};
+
+function TopologyGraph({
+  containerRef,
+  edges,
+  height,
+  isTopologySwapped,
+  nodes,
+  reactFlowColorMode,
+}: TopologyGraphProps) {
+  return (
+    <Box
+      ref={containerRef}
+      sx={{
+        height,
+        border: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: EXPORT_BACKGROUND_BY_MODE[reactFlowColorMode],
+      }}
+    >
+      <ReactFlow
+        key={isTopologySwapped ? 'topology-swapped' : 'topology-default'}
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        fitView
+        colorMode={reactFlowColorMode}
+      >
+        <Background />
+        <Controls />
+      </ReactFlow>
+    </Box>
+  );
+}
+
 export default function TopologySection() {
   const { mode, systemMode } = useColorScheme();
+  const { sourceColorRegistry } = useSourceColorContext();
   const reactFlowColorMode = mode === 'system' ? (systemMode ?? 'light') : (mode ?? 'light');
   const edgeColors = EDGE_COLORS_BY_MODE[reactFlowColorMode];
   const [minDistinctSourceCount, setMinDistinctSourceCount] = useState(DEFAULT_MIN_DISTINCT_SOURCE_COUNT);
@@ -153,8 +199,14 @@ export default function TopologySection() {
       ),
     }));
     const alertYById = getSpacedPositionsByPreferredY(alertPreferredPositions, ROW_GAP);
-
-    let indexForCollectorNotLinked = 0;
+    const unlinkedCollectorFallbackYById = new Map(
+      collectors
+        .filter(
+          (collector) =>
+            !sources.some((source) => source.collector_id === collector.id),
+        )
+        .map((collector, index) => [collector.id, index * ROW_GAP * -1]),
+    );
 
     const collectorNodes: Node<CollectorNodeData, 'collector'>[] = collectors.map(
       (collector) => {
@@ -163,16 +215,12 @@ export default function TopologySection() {
           .map((source) => sourceYById.get(source.source_id))
           .filter((position): position is number => position != null);
 
-        const fallbackY = indexForCollectorNotLinked * ROW_GAP * -1;
+        const fallbackY = unlinkedCollectorFallbackYById.get(collector.id) ?? 0;
 
         const y =
           sourcePositions.length > 0
             ? getAveragePosition(sourcePositions, fallbackY)
             : fallbackY;
-
-        if (sourcePositions.length === 0) {
-          indexForCollectorNotLinked += 1;
-        }
 
         return {
           id: `collector-${collector.id}`,
@@ -190,8 +238,20 @@ export default function TopologySection() {
     const sourceNodes: Node<SourceNodeData, 'source'>[] = sources.map((source, index) => ({
       id: `source-${source.source_id}`,
       type: 'source',
-      position: { x: getTopologyX(SOURCE_X), y: sourceYById.get(source.source_id) ?? index * ROW_GAP },
-      data: { source, isTopologySwapped },
+      position: {
+        x: getTopologyX(SOURCE_X),
+        y: sourceYById.get(source.source_id) ?? index * ROW_GAP,
+      },
+      data: {
+        source,
+        sourceColor: getSourceColor({
+          sourceId: source.source_id,
+          sourceName: source.source_name,
+          sourceColor: source.source_color,
+          sourceColorRegistry,
+        }),
+        isTopologySwapped,
+      },
     }));
     {/* Calcul la position des alertes */}
     const alertNodes: Node<AlertNodeData, 'alert'>[] = alerts.map((alert, index) => ({
@@ -236,7 +296,13 @@ export default function TopologySection() {
       nodes: [...collectorNodes, ...sourceNodes, ...alertNodes],
       edges: [...topologyEdges, ...alertEdges],
     };
-  }, [edgeColors, handleToggleAlertVisibility, isTopologySwapped, topologyQuery.data]);
+  }, [
+    edgeColors,
+    handleToggleAlertVisibility,
+    isTopologySwapped,
+    sourceColorRegistry,
+    topologyQuery.data,
+  ]);
 
   const hiddenAlertIdSet = useMemo(() => new Set(hiddenAlertIds), [hiddenAlertIds]);
   const hiddenAlertEdgeIdSet = useMemo(() => new Set(hiddenAlertEdgeIds), [hiddenAlertEdgeIds]);
@@ -366,30 +432,6 @@ export default function TopologySection() {
     </>
   );
 
-  const graphContent = (containerRef: React.RefObject<HTMLDivElement | null>, height: number | string) => (
-    <Box
-      ref={containerRef}
-      sx={{
-        height,
-        border: '1px solid',
-        borderColor: 'divider',
-        backgroundColor: EXPORT_BACKGROUND_BY_MODE[reactFlowColorMode],
-      }}
-    >
-      <ReactFlow
-        key={isTopologySwapped ? 'topology-swapped' : 'topology-default'}
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        colorMode={reactFlowColorMode}
-      >
-        <Background />
-        <Controls />
-      </ReactFlow>
-    </Box>
-  );
-
   const handleRefresh = () => {
     topologyQuery.refetch();
     setHiddenAlertIds([]);
@@ -425,7 +467,14 @@ export default function TopologySection() {
             <Alert severity="info">Les données sont vides.</Alert>
           ) : null}
           {!topologyQuery.isLoading && !topologyQuery.isError && !isEmpty ? (
-            graphContent(flowContainerRef, 460)
+            <TopologyGraph
+              containerRef={flowContainerRef}
+              edges={edges}
+              height={460}
+              isTopologySwapped={isTopologySwapped}
+              nodes={nodes}
+              reactFlowColorMode={reactFlowColorMode}
+            />
           ) : null}
         </CardContent>
       </Card>
@@ -449,7 +498,14 @@ export default function TopologySection() {
           </Stack>
         </DialogTitle>
         <DialogContent sx={{ p: 2 }}>
-          {graphContent(dialogFlowContainerRef, 'calc(100vh - 120px)')}
+          <TopologyGraph
+            containerRef={dialogFlowContainerRef}
+            edges={edges}
+            height="calc(100vh - 120px)"
+            isTopologySwapped={isTopologySwapped}
+            nodes={nodes}
+            reactFlowColorMode={reactFlowColorMode}
+          />
         </DialogContent>
       </Dialog>
     </Stack>

@@ -3,9 +3,10 @@ import Alert from '@mui/material/Alert';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { fetchDashboardOverview } from './api/api';
-import StatCard from '../../../../components/cards/StatCard';
-import type { DashboardOverview } from './types/types';
+import { fetchDashboardOverview } from './api/dashboardOverviewApi';
+import StatCard from './components/StatCard';
+import type { DashboardOverview } from './types/dashboardOverviewTypes';
+import { dashboardQueryKeys } from '../../utils/queryKeys';
 
 function formatCount(value: number | undefined) {
   if (value == null) {
@@ -47,7 +48,7 @@ const overviewCardDefinitions = [
 export default function OverviewSection() {
   const { data, isLoading, isError, isSuccess } = useQuery({
     queryFn: fetchDashboardOverview,
-    queryKey: ['dashboardOverview'],
+    queryKey: dashboardQueryKeys.dashboardOverview,
   });
   const isEmpty = isSuccess && !hasDashboardOverviewData(data);
 

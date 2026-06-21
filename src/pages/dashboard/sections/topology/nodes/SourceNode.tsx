@@ -6,6 +6,7 @@ import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 import {
   Handle,
   Position,
@@ -13,20 +14,36 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 
-import { getSourceLogo } from '../../../../../utils/logo';
-import type { SourceNodeData } from '../types/types';
+import { getSourceLogo } from '../../../../../shared/utils/logo';
+import type { SourceNodeData } from '../types/topologyTypes';
 import { MAX_HEIGHT_NODE, MAX_WIDTH_NODE, MIN_WIDTH_NODE, MIN_HEIGHT_NODE } from '../utils/constants';
 
 
 { /* Node représentant une source */ }
 export default function SourceNode({ data }: NodeProps<Node<SourceNodeData, 'source'>>) {
-  const { source, isTopologySwapped } = data;
+  const { source, sourceColor, isTopologySwapped } = data;
   const sourceLogo = getSourceLogo(source.sensor_type_code);
   const hasSyncError =
     source.last_inventory_status === 'failed' || source.last_collection_status === 'failed';
 
   return (
-    <Card variant="outlined" sx={{ minWidth: MIN_WIDTH_NODE, minHeight: MIN_HEIGHT_NODE, maxWidth: MAX_WIDTH_NODE, maxHeight: MAX_HEIGHT_NODE, borderRadius: 1 }}>
+    <Card
+      variant="outlined"
+      sx={(theme) => ({
+        minWidth: MIN_WIDTH_NODE,
+        minHeight: MIN_HEIGHT_NODE,
+        maxWidth: MAX_WIDTH_NODE,
+        maxHeight: MAX_HEIGHT_NODE,
+        borderRadius: 1,
+        '&&': {
+          border: `2px solid ${sourceColor}`,
+          background: alpha(sourceColor, 0.08),
+          ...theme.applyStyles('dark', {
+            background: alpha(sourceColor, 0.16),
+          }),
+        },
+      })}
+    >
       <Handle type="target" position={isTopologySwapped ? Position.Right : Position.Left} />
       <Handle type="source" position={isTopologySwapped ? Position.Left : Position.Right} />
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>

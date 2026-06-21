@@ -1,12 +1,11 @@
 import type {} from '@mui/x-date-pickers/themeAugmentation';
 import type {} from '@mui/x-charts/themeAugmentation';
-import type {} from '@mui/x-data-grid-pro/themeAugmentation';
-import type {} from '@mui/x-tree-view/themeAugmentation';
+import type {} from '@mui/x-data-grid/themeAugmentation';
 import { alpha } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import AppTheme from '../../shared-theme/AppTheme';
+import AppTheme from '../../shared/theme/AppTheme';
 import AlertsSection from './sections/alerts/AlertsSection';
 import AttacksSection from './sections/attacks/AttacksSection';
 import ChartsSection from './sections/charts/ChartsSection';
@@ -17,14 +16,12 @@ import {
   chartsCustomizations,
   dataGridCustomizations,
   datePickersCustomizations,
-  treeViewCustomizations,
-} from '../../theme/customizations';
+} from '../../shared/theme/x-customizations';
 
 const xThemeComponents = {
   ...chartsCustomizations,
   ...dataGridCustomizations,
   ...datePickersCustomizations,
-  ...treeViewCustomizations,
 };
 
 export default function DashboardPage(props: { disableCustomTheme?: boolean }) {

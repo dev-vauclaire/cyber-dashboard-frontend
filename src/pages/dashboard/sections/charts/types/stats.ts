@@ -1,4 +1,4 @@
-import type { IsoUtcDateTimeString } from '../../../../../types/common';
+import type { IsoUtcDateTimeString } from '../../../../../shared/types/common';
 
 export type AttackStatsDateRangeQuery = {
   from: IsoUtcDateTimeString;

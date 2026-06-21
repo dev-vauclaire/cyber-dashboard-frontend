@@ -16,7 +16,7 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import type { AlertNodeData } from '../types/types';
+import type { AlertNodeData } from '../types/topologyTypes';
 import { MAX_HEIGHT_NODE, MAX_WIDTH_NODE, MIN_WIDTH_NODE, MIN_HEIGHT_NODE } from '../utils/constants';
 
 { /* Node représentant une alerte */ }

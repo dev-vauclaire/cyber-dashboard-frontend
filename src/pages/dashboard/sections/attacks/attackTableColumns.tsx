@@ -2,10 +2,10 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import type { AttackRecord } from '../../../../types/attacks';
-import type { SourceColorRegistry } from '../../../../utils/sourceColors';
-import { formatDate } from '../../../../utils/dateUtils';
-import { getSourceColor } from '../../../../utils/sourceColors';
+import type { AttackRecord } from './types/attackTypes';
+import type { SourceColorRegistry } from '../../../../shared/sources/utils/sourceColors';
+import { formatDate } from '../../../../shared/utils/dateUtils';
+import { getSourceColor } from '../../../../shared/sources/utils/sourceColors';
 
 function renderSourceCell(
   params: GridRenderCellParams<AttackRecord, string>,

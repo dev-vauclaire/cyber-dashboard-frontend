@@ -9,8 +9,9 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
-import ColorModeIconDropdown from '../../../../shared-theme/ColorModeIconDropdown';
-import { DASHBOARD_SECTION_LINKS } from './types/links';
+import ColorModeIconDropdown from '../../../../shared/theme/ColorModeIconDropdown';
+import ApiHealthIndicator from './components/ApiHealthIndicator';
+import { DASHBOARD_SECTION_LINKS } from './constants/sectionLinks';
 
 export default function DashboardHeader() {
   const headerRef = useRef<HTMLElement | null>(null);
@@ -84,6 +85,7 @@ export default function DashboardHeader() {
               direction={{ xs: 'column', md: 'row' }}
               sx={{ gap: 1, alignItems: { xs: 'stretch', sm: 'center' } }}
             >
+              <ApiHealthIndicator />
               <Button
                 component={RouterLink}
                 to="/settings"

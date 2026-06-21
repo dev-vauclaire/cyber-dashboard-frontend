@@ -8,6 +8,23 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
+      watch: {
+        ignored: [
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/dist/**',
+          '**/coverage/**',
+          'Dockerfile',
+          '**/tests/**',
+          '**/vite.config.ts',
+          '**/tsconfig.json',
+          '**/package.json',
+          '**/package-lock.json',
+          '**/yarn.lock',
+          'LICENSE',
+          'README.md'
+        ],
+      },
       proxy: {
         '/api': {
           target: backendUrl,

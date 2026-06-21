@@ -1,32 +1,42 @@
 import * as React from 'react';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
+import DonutLargeRoundedIcon from '@mui/icons-material/DonutLargeRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+import SourceRoundedIcon from '@mui/icons-material/SourceRounded';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
-import CustomDatePicker from '../../../../components/filters/CustomDatePicker';
-import LinearChart from '../../../../components/charts/LinearChart';
-import SourceDistributionChart from '../../../../components/charts/SourceDistributionChart';
-import { fetchAttacksBySource, fetchAttacksBySourceTimeseries } from './api/stats';
+import CustomDatePicker from '../../../../shared/components/CustomDatePicker';
+import AttackTypeDistributionChart from './components/AttackTypeDistributionChart';
+import LinearChart from './components/LinearChart';
+import SourceDistributionChart from './components/SourceDistributionChart';
+import {
+  fetchAttacksBySource,
+  fetchAttacksBySourceTimeseries,
+  fetchAttacksByType,
+} from './api/stats';
 import type {
   AttackStatsDateRangeQuery,
   AttacksBySourceResponse,
   AttacksBySourceTimeseriesResponse,
+  AttacksByTypeResponse,
 } from './types/stats';
 import {
   buildParisDayBoundaryUtcIso,
   formatDateToParisDayLabel,
-} from '../../../../utils/dateUtils';
+  normalizeDayjsDateRange,
+  type DayjsDateRange,
+} from '../../../../shared/utils/dateUtils';
+import { chartsQueryKeys } from './queryKeys';
 
-type ChartsLocalDateRange = {
-  from: Dayjs | null;
-  to: Dayjs | null;
-};
+type DistributionMode = 'source' | 'type';
 
-function createDefaultChartsDateRange(): ChartsLocalDateRange {
+function createDefaultChartsDateRange(): DayjsDateRange {
   const today = dayjs();
 
   return {
@@ -35,54 +45,8 @@ function createDefaultChartsDateRange(): ChartsLocalDateRange {
   };
 }
 
-function normalizeLocalDateRange(
-  currentRange: ChartsLocalDateRange,
-  field: 'from' | 'to',
-  nextValue: Dayjs | null,
-): ChartsLocalDateRange {
-  if (field === 'from') {
-    if (nextValue == null) {
-      return {
-        ...currentRange,
-        from: null,
-      };
-    }
-
-    if (currentRange.to != null && nextValue.isAfter(currentRange.to, 'day')) {
-      return {
-        from: nextValue,
-        to: nextValue,
-      };
-    }
-
-    return {
-      ...currentRange,
-      from: nextValue,
-    };
-  }
-
-  if (nextValue == null) {
-    return {
-      ...currentRange,
-      to: null,
-    };
-  }
-
-  if (currentRange.from != null && nextValue.isBefore(currentRange.from, 'day')) {
-    return {
-      from: nextValue,
-      to: nextValue,
-    };
-  }
-
-  return {
-    ...currentRange,
-    to: nextValue,
-  };
-}
-
 function buildAttackStatsDateRangeQuery(
-  localDateRange: ChartsLocalDateRange,
+  localDateRange: DayjsDateRange,
 ): AttackStatsDateRangeQuery | null {
   if (localDateRange.from == null || localDateRange.to == null) {
     return null;
@@ -143,48 +107,85 @@ function buildSourceDistributionData(data: AttacksBySourceResponse | undefined) 
   };
 }
 
+function buildAttackTypeDistributionData(data: AttacksByTypeResponse | undefined) {
+  const items = (data?.items ?? [])
+    .slice()
+    .sort((left, right) => right.attack_count - left.attack_count)
+    .map((item) => ({
+      attackType: item.attack_type,
+      attackCount: item.attack_count,
+      percentage: item.percentage,
+    }));
+
+  return {
+    items,
+    totalAttacks: items.reduce((total, item) => total + item.attackCount, 0),
+  };
+}
+
 export default function ChartsSection() {
-  const [localDateRange, setLocalDateRange] = React.useState<ChartsLocalDateRange>(() =>
+  const [localDateRange, setLocalDateRange] = React.useState<DayjsDateRange>(() =>
     createDefaultChartsDateRange(),
   );
   const [refreshToken, setRefreshToken] = React.useState(0);
+  const [distributionMode, setDistributionMode] =
+    React.useState<DistributionMode>('source');
   const [hiddenSourceIds, setHiddenSourceIds] = React.useState<Set<number>>(
     () => new Set(),
   );
   const dateRangeQuery = buildAttackStatsDateRangeQuery(localDateRange);
   const timelineQuery = useQuery({
     queryFn: () => fetchAttacksBySourceTimeseries(dateRangeQuery!),
-    queryKey: [
-      'chartsTimeline',
+    queryKey: chartsQueryKeys.timeline(
       dateRangeQuery?.from ?? null,
       dateRangeQuery?.to ?? null,
       refreshToken,
-    ],
+    ),
     enabled: dateRangeQuery != null,
   });
   const sourceDistributionQuery = useQuery({
     queryFn: () => fetchAttacksBySource(dateRangeQuery!),
-    queryKey: [
-      'chartsBySource',
+    queryKey: chartsQueryKeys.bySource(
       dateRangeQuery?.from ?? null,
       dateRangeQuery?.to ?? null,
       refreshToken,
-    ],
-    enabled: dateRangeQuery != null,
+    ),
+    enabled: dateRangeQuery != null && distributionMode === 'source',
+  });
+  const attackTypeDistributionQuery = useQuery({
+    queryFn: () => fetchAttacksByType(dateRangeQuery!),
+    queryKey: chartsQueryKeys.byType(
+      dateRangeQuery?.from ?? null,
+      dateRangeQuery?.to ?? null,
+      refreshToken,
+    ),
+    enabled: dateRangeQuery != null && distributionMode === 'type',
   });
 
   const timelineChartData = buildTimelineChartData(timelineQuery.data);
   const sourceDistributionData = buildSourceDistributionData(sourceDistributionQuery.data);
+  const attackTypeDistributionData = buildAttackTypeDistributionData(
+    attackTypeDistributionQuery.data,
+  );
   const isDateRangeIncomplete = localDateRange.from == null || localDateRange.to == null;
 
   function handleDateChange(field: 'from' | 'to', value: Dayjs | null) {
     setLocalDateRange((currentRange) =>
-      normalizeLocalDateRange(currentRange, field, value),
+      normalizeDayjsDateRange(currentRange, field, value),
     );
   }
 
   function handleRefresh() {
     setRefreshToken((currentToken) => currentToken + 1);
+  }
+
+  function handleDistributionModeChange(
+    _event: React.MouseEvent<HTMLElement>,
+    nextMode: DistributionMode | null,
+  ) {
+    if (nextMode != null) {
+      setDistributionMode(nextMode);
+    }
   }
 
   function handleToggleSource(sourceId: number) {
@@ -230,7 +231,7 @@ export default function ChartsSection() {
             Graphiques
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Evolution temporelle et repartition des attaques par source.
+            Evolution temporelle et repartition des attaques par source ou par type.
           </Typography>
         </Stack>
         <Stack
@@ -257,6 +258,22 @@ export default function ChartsSection() {
           >
             Rafraîchir
           </Button>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={distributionMode}
+            onChange={handleDistributionModeChange}
+            aria-label="Mode de repartition des attaques"
+          >
+            <ToggleButton value="source" aria-label="Repartition par source">
+              <SourceRoundedIcon fontSize="small" sx={{ mr: 0.75 }} />
+              Par source
+            </ToggleButton>
+            <ToggleButton value="type" aria-label="Repartition par type">
+              <DonutLargeRoundedIcon fontSize="small" sx={{ mr: 0.75 }} />
+              Par type
+            </ToggleButton>
+          </ToggleButtonGroup>
         </Stack>
       </Stack>
       {isDateRangeIncomplete ? (
@@ -283,19 +300,33 @@ export default function ChartsSection() {
           />
         </Grid>
         <Grid size={{ xs: 12, lg: 4 }}>
-          <SourceDistributionChart
-            totalAttacks={visibleDistributionTotal}
-            items={sourceDistributionItemsWithVisiblePercentages}
-            isLoading={sourceDistributionQuery.isLoading}
-            isError={sourceDistributionQuery.isError}
-            hiddenSourceIds={hiddenSourceIds}
-            onToggleSource={handleToggleSource}
-            isEmpty={
-              !sourceDistributionQuery.isLoading &&
-              !sourceDistributionQuery.isError &&
-              sourceDistributionData.items.length === 0
-            }
-          />
+          {distributionMode === 'source' ? (
+            <SourceDistributionChart
+              totalAttacks={visibleDistributionTotal}
+              items={sourceDistributionItemsWithVisiblePercentages}
+              isLoading={sourceDistributionQuery.isLoading}
+              isError={sourceDistributionQuery.isError}
+              hiddenSourceIds={hiddenSourceIds}
+              onToggleSource={handleToggleSource}
+              isEmpty={
+                !sourceDistributionQuery.isLoading &&
+                !sourceDistributionQuery.isError &&
+                sourceDistributionData.items.length === 0
+              }
+            />
+          ) : (
+            <AttackTypeDistributionChart
+              totalAttacks={attackTypeDistributionData.totalAttacks}
+              items={attackTypeDistributionData.items}
+              isLoading={attackTypeDistributionQuery.isLoading}
+              isError={attackTypeDistributionQuery.isError}
+              isEmpty={
+                !attackTypeDistributionQuery.isLoading &&
+                !attackTypeDistributionQuery.isError &&
+                attackTypeDistributionData.items.length === 0
+              }
+            />
+          )}
         </Grid>
       </Grid>
     </Stack>

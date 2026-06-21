@@ -15,33 +15,22 @@ import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { GridPaginationModel, GridRowParams } from '@mui/x-data-grid';
-import { fetchAttacks } from '../../../../api/attacks';
-import { fetchSources } from '../../../../api/sources';
-import CustomizedDataGrid from '../../../../components/data-display/CustomizedDataGrid';
-import AttackDetailDialog from '../../../../components/dialogs/AttackDetailDialog';
-import CustomDatePicker from '../../../../components/filters/CustomDatePicker';
-import { useSourceColorContext } from '../../../../internals/source-colors/SourceColorContext';
-import type { AttackRecord, PaginatedAttacksQuery } from '../../../../types/attacks';
-import type { Source } from '../../../../types/sources';
-import { buildParisDayBoundaryUtcIso } from '../../../../utils/dateUtils';
-import { getSourceColor } from '../../../../utils/sourceColors';
+import { fetchAttacks } from './api/attacksApi';
+import { attacksQueryKeys } from './queryKeys';
+import type { AttackRecord } from './types/attackTypes';
+import { fetchSources } from '../../../../shared/sources/api';
+import { sourcesQueryKeys } from '../../../../shared/sources/queryKeys';
+import CustomizedDataGrid from './components/CustomizedDataGrid';
+import CustomDatePicker from '../../../../shared/components/CustomDatePicker';
+import { useSourceColorContext } from '../../../../shared/sources/providers/sourceColorContext';
+import { normalizeDayjsDateRange } from '../../../../shared/utils/dateUtils';
+import SourceOptionLabel from '../../utils/SourceOptionLabel';
+import { buildSourceOptions } from '../../utils/sourceOptions';
 import { buildAttackTableColumns } from './attackTableColumns';
-
-type AttacksLocalDateRange = {
-  from: Dayjs | null;
-  to: Dayjs | null;
-};
-
-type AttacksLocalFilters = {
-  sourceId: string;
-  dateRange: AttacksLocalDateRange;
-};
-
-type SourceOption = {
-  value: string;
-  label: string;
-  color: string;
-};
+import AttackDetailDialog from './components/AttackDetailDialog';
+import type { AttacksLocalFilters } from './types/attacksSectionTypes';
+import { buildPaginatedAttacksQuery } from './utils/queryParams';
+import { sortAttacksByOccurredAt } from './utils/sorting';
 
 const DEFAULT_PAGINATION_MODEL: GridPaginationModel = {
   page: 0,
@@ -56,123 +45,6 @@ const EMPTY_FILTERS: AttacksLocalFilters = {
   },
 };
 
-function normalizeLocalDateRange(
-  currentRange: AttacksLocalDateRange,
-  field: 'from' | 'to',
-  nextValue: Dayjs | null,
-): AttacksLocalDateRange {
-  if (field === 'from') {
-    if (nextValue == null) {
-      return {
-        ...currentRange,
-        from: null,
-      };
-    }
-
-    if (currentRange.to != null && nextValue.isAfter(currentRange.to, 'day')) {
-      return {
-        from: nextValue,
-        to: nextValue,
-      };
-    }
-
-    return {
-      ...currentRange,
-      from: nextValue,
-    };
-  }
-
-  if (nextValue == null) {
-    return {
-      ...currentRange,
-      to: null,
-    };
-  }
-
-  if (currentRange.from != null && nextValue.isBefore(currentRange.from, 'day')) {
-    return {
-      from: nextValue,
-      to: nextValue,
-    };
-  }
-
-  return {
-    ...currentRange,
-    to: nextValue,
-  };
-}
-
-function buildPaginatedAttacksQuery(
-  filters: AttacksLocalFilters,
-  paginationModel: GridPaginationModel,
-): PaginatedAttacksQuery {
-  const query: PaginatedAttacksQuery = {
-    page: paginationModel.page + 1,
-    page_size: paginationModel.pageSize,
-  };
-
-  if (filters.sourceId !== '') {
-    query.source_id = Number(filters.sourceId);
-  }
-
-  if (filters.dateRange.from != null) {
-    query.from = buildParisDayBoundaryUtcIso(filters.dateRange.from, 'start');
-  }
-
-  if (filters.dateRange.to != null) {
-    query.to = buildParisDayBoundaryUtcIso(filters.dateRange.to, 'end');
-  }
-
-  return query;
-}
-
-function buildSourceOptions(
-  sources: Source[],
-  sourceColorRegistry: ReturnType<typeof useSourceColorContext>['sourceColorRegistry'],
-): SourceOption[] {
-  return sources
-    .slice()
-    .sort((left, right) => left.source_name.localeCompare(right.source_name, 'fr'))
-    .map((source) => ({
-      value: String(source.source_id),
-      label: source.source_name,
-      color: getSourceColor({
-        sourceId: source.source_id,
-        sourceName: source.source_name,
-        sourceColor: source.color,
-        sourceColorRegistry,
-      }),
-    }));
-}
-
-function sortAttacksByOccurredAt(items: AttackRecord[]): AttackRecord[] {
-  return items
-    .slice()
-    .sort(
-      (left, right) =>
-        new Date(right.occurred_at).getTime() - new Date(left.occurred_at).getTime(),
-    );
-}
-
-function SourceOptionLabel({ color, label }: { color: string; label: string }) {
-  return (
-    <Stack direction="row" sx={{ alignItems: 'center', gap: 1, minWidth: 0 }}>
-      <Box
-        sx={{
-          width: 10,
-          height: 10,
-          borderRadius: '999px',
-          backgroundColor: color,
-          flexShrink: 0,
-        }}
-      />
-      <Typography variant="body2" noWrap title={label}>
-        {label}
-      </Typography>
-    </Stack>
-  );
-}
-
 export default function AttacksSection() {
   const { sourceColorRegistry } = useSourceColorContext();
   const [filters, setFilters] = React.useState<AttacksLocalFilters>(EMPTY_FILTERS);
@@ -182,7 +54,7 @@ export default function AttacksSection() {
   const [selectedAttack, setSelectedAttack] = React.useState<AttackRecord | null>(null);
 
   const sourcesQuery = useQuery({
-    queryKey: ['sourcesColorRegistry'],
+    queryKey: sourcesQueryKeys.colorRegistry,
     queryFn: fetchSources,
     staleTime: 5 * 60 * 1000,
   });
@@ -193,7 +65,7 @@ export default function AttacksSection() {
   );
 
   const attacksQuery = useQuery({
-    queryKey: ['attacks', attacksQueryParams],
+    queryKey: attacksQueryKeys.list(attacksQueryParams),
     queryFn: () => fetchAttacks(attacksQueryParams),
     placeholderData: keepPreviousData,
   });
@@ -232,7 +104,7 @@ export default function AttacksSection() {
   function handleDateChange(field: 'from' | 'to', value: Dayjs | null) {
     setFilters((currentFilters) => ({
       ...currentFilters,
-      dateRange: normalizeLocalDateRange(currentFilters.dateRange, field, value),
+      dateRange: normalizeDayjsDateRange(currentFilters.dateRange, field, value),
     }));
     resetPage();
   }

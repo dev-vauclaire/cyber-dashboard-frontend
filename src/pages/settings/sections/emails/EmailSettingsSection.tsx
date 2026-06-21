@@ -17,15 +17,16 @@ import {
   fetchSmtpConfig,
   patchSmtpConfig,
   testSmtpConfig,
-} from '../../../../api/smtp';
-import type { SmtpConfigUpdatePayload } from '../../../../types/smtp';
-import ValidationStatusChip from '../../components/ValidationStatusChip';
+} from './api/smtpApi';
+import { smtpQueryKeys } from './queryKeys';
+import type { SmtpConfigUpdatePayload } from './types/smtpTypes';
+import ValidationStatusChip from '../../../../shared/components/ValidationStatusChip';
 
 type SmtpAction = 'activate' | 'deactivate' | 'delete-password' | 'save' | 'test';
 
 export default function EmailSettingsSection() {
   const queryClient = useQueryClient();
-  const smtpQuery = useQuery({ queryKey: ['smtpConfig'], queryFn: fetchSmtpConfig });
+  const smtpQuery = useQuery({ queryKey: smtpQueryKeys.config, queryFn: fetchSmtpConfig });
   const [form, setForm] = React.useState<SmtpConfigUpdatePayload>({});
   const mutation = useMutation({
     mutationFn: async (action: SmtpAction) => {
@@ -35,7 +36,7 @@ export default function EmailSettingsSection() {
       if (action === 'test') return testSmtpConfig();
       return patchSmtpConfig(form);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['smtpConfig'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: smtpQueryKeys.config }),
   });
 
   React.useEffect(() => {
