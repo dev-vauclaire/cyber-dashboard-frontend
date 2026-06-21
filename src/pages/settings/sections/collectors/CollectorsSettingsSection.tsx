@@ -15,17 +15,21 @@ import {
   activateAttacksCollectorConfig,
   createAttacksCollectorConfig,
   deactivateAttacksCollectorConfig,
+  deleteAttacksCollectorConfig,
   deleteAttacksCollectorApiKey,
   deleteAttacksCollectorEmail,
   fetchAttacksCollectorConfigs,
   patchAttacksCollectorConfig,
   requestAttacksCollectorInventory,
-} from '../../../../api/collectors';
+} from './api/collectorsApi';
+import { collectorsQueryKeys } from './queryKeys';
 import type {
+  AttacksCollectorConfig,
   AttacksCollectorConfigPayload,
   CollectorType,
-} from '../../../../types/collectors';
+} from './types/collectorTypes';
 import CollectorConfigCard from './CollectorConfigCard';
+import DeleteCollectorDialog from './components/DeleteCollectorDialog';
 
 type CollectorAction = {
   action: string;
@@ -35,8 +39,11 @@ type CollectorAction = {
 
 export default function CollectorsSettingsSection() {
   const queryClient = useQueryClient();
+  const [collectorToDelete, setCollectorToDelete] =
+    React.useState<AttacksCollectorConfig | null>(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const configsQuery = useQuery({
-    queryKey: ['attacksCollectorConfigs'],
+    queryKey: collectorsQueryKeys.configs,
     queryFn: fetchAttacksCollectorConfigs,
   });
   const [draft, setDraft] = React.useState<
@@ -59,11 +66,46 @@ export default function CollectorsSettingsSection() {
       if (action === 'inventory' && id != null) return requestAttacksCollectorInventory(id);
       throw new Error('Action collecteur invalide');
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['attacksCollectorConfigs'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: collectorsQueryKeys.configs }),
   });
+  const deleteMutation = useMutation({
+    mutationFn: deleteAttacksCollectorConfig,
+    onSuccess: async () => {
+      const deletedCollectorName = collectorToDelete?.name;
+      setCollectorToDelete(null);
+      if (deletedCollectorName != null) {
+        setSuccessMessage(`Le collecteur « ${deletedCollectorName} » a été supprimé.`);
+      }
+      await queryClient.invalidateQueries({ queryKey: collectorsQueryKeys.configs });
+    },
+  });
+
+  function handleDeleteRequest(config: AttacksCollectorConfig) {
+    deleteMutation.reset();
+    setSuccessMessage(null);
+    setCollectorToDelete(config);
+  }
+
+  function handleDeleteCancel() {
+    if (!deleteMutation.isPending) {
+      deleteMutation.reset();
+      setCollectorToDelete(null);
+    }
+  }
+
+  function handleDeleteConfirm() {
+    if (collectorToDelete != null) {
+      deleteMutation.mutate(collectorToDelete.id);
+    }
+  }
 
   return (
     <Stack spacing={2}>
+      {successMessage != null ? (
+        <Alert severity="success" onClose={() => setSuccessMessage(null)}>
+          {successMessage}
+        </Alert>
+      ) : null}
       {mutation.isError ? <Alert severity="warning">{mutation.error.message}</Alert> : null}
       {configsQuery.isError ? (
         <Alert severity="warning">Impossible de charger les collecteurs.</Alert>
@@ -115,10 +157,22 @@ export default function CollectorsSettingsSection() {
       <Grid container spacing={2}>
         {(configsQuery.data?.items ?? []).map((config) => (
           <Grid key={config.id} size={{ xs: 12, md: 6 }}>
-            <CollectorConfigCard config={config} onAction={(input) => mutation.mutate(input)} />
+            <CollectorConfigCard
+              config={config}
+              onAction={(input) => mutation.mutate(input)}
+              onDelete={handleDeleteRequest}
+            />
           </Grid>
         ))}
       </Grid>
+      <DeleteCollectorDialog
+        collectorName={collectorToDelete?.name ?? ''}
+        errorMessage={deleteMutation.isError ? deleteMutation.error.message : null}
+        isDeleting={deleteMutation.isPending}
+        open={collectorToDelete != null}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+      />
     </Stack>
   );
 }

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -16,11 +17,12 @@ import type {
   AttacksCollectorConfig,
   AttacksCollectorConfigPayload,
   CollectorType,
-} from '../../../../types/collectors';
-import ValidationStatusChip from '../../components/ValidationStatusChip';
+} from './types/collectorTypes';
+import ValidationStatusChip from '../../../../shared/components/ValidationStatusChip';
 
 type CollectorConfigCardProps = {
   config: AttacksCollectorConfig;
+  onDelete: (config: AttacksCollectorConfig) => void;
   onAction: (input: {
     action: string;
     id?: number;
@@ -28,7 +30,11 @@ type CollectorConfigCardProps = {
   }) => void;
 };
 
-export default function CollectorConfigCard({ config, onAction }: CollectorConfigCardProps) {
+export default function CollectorConfigCard({
+  config,
+  onAction,
+  onDelete,
+}: CollectorConfigCardProps) {
   const [form, setForm] = React.useState<AttacksCollectorConfigPayload>({
     name: config.name,
     collector_type: config.collector_type,
@@ -171,6 +177,15 @@ export default function CollectorConfigCard({ config, onAction }: CollectorConfi
                 Supprimer email
               </Button>
             ) : null}
+            <Button
+              size="small"
+              color="error"
+              variant="outlined"
+              startIcon={<DeleteOutlineRoundedIcon fontSize="small" />}
+              onClick={() => onDelete(config)}
+            >
+              Supprimer le collecteur
+            </Button>
           </Stack>
         </Stack>
       </CardContent>
