@@ -19,6 +19,8 @@ import type {
   CollectorType,
 } from './types/collectorTypes';
 import ValidationStatusChip from '../../../../shared/components/ValidationStatusChip';
+import { getCollectorLogo } from '../../../../shared/utils/logo';
+import Box from '@mui/material/Box';
 
 type CollectorConfigCardProps = {
   config: AttacksCollectorConfig;
@@ -58,12 +60,24 @@ export default function CollectorConfigCard({
     ...(form.email?.trim() ? { email: form.email } : {}),
   };
 
+  const collectorLogo = getCollectorLogo(config.collector_type);
+
   return (
     <Card variant="outlined" sx={{ height: '100%' }}>
       <CardContent>
         <Stack spacing={1.5}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 1 }}>
-            <Typography variant="subtitle2">{config.name}</Typography>
+            <Stack direction="row" sx={{ gap: 1, alignItems: 'center' }}>
+              {collectorLogo ? (
+                <Box
+                  component="img"
+                  src={collectorLogo}
+                  alt={`${config.name} logo`}
+                  sx={{ width: 32, height: 32 }}
+                />
+              ) : null}
+              <Typography variant="subtitle2">{config.name}</Typography>
+            </Stack>
             <ValidationStatusChip status={config.last_validation_status} />
           </Stack>
           <Grid container spacing={1.5}>
