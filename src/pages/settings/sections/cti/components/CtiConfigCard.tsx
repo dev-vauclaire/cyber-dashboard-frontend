@@ -21,6 +21,8 @@ import type { CtiConfig } from '../../../../../shared/cti/types';
 import ValidationStatusChip from '../../../../../shared/components/ValidationStatusChip';
 import { formatDate } from '../../../../../shared/utils/dateUtils';
 import type { CtiActionName } from '../types/ctiSettingsTypes';
+import { getCtiToolLogo } from '../../../../../shared/utils/logo';
+import Box from '@mui/material/Box';
 
 type CtiConfigCardProps = {
   config: CtiConfig;
@@ -66,6 +68,8 @@ export default function CtiConfigCard({
   const isActivationDisabled =
     isBusy || (!config.is_active && config.is_key_required && !config.has_api_key);
 
+  const ctiToolLogo = getCtiToolLogo(config.code);
+
   return (
     <Card variant="outlined" sx={{ height: '100%' }}>
       <CardContent>
@@ -75,9 +79,19 @@ export default function CtiConfigCard({
             sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}
           >
             <Stack spacing={0.5}>
-              <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600 }}>
-                {config.label}
-              </Typography>
+              <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+                {ctiToolLogo ? (
+                  <Box
+                    component="img"
+                    src={ctiToolLogo}
+                    alt={`${config.label} logo`}
+                    sx={{ width: 32, height: 32 }}
+                  />
+                ) : null}
+                <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  {config.label}
+                </Typography>
+              </Stack>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                 {config.last_validation_at
                   ? `Dernière validation : ${formatDate(config.last_validation_at)}`
