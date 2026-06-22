@@ -86,11 +86,6 @@ export default function SourceNode({ data }: NodeProps<Node<SourceNodeData, 'sou
               <Chip size="small" color="error" variant="outlined" label="Sync erreur" />
             ) : null}
           </Stack>
-          {source.last_inventory_error_message || source.last_collection_error_message ? (
-            <Typography variant="caption" sx={{ color: 'error.main' }}>
-              {source.last_inventory_error_message ?? source.last_collection_error_message}
-            </Typography>
-          ) : null}
         </Stack>
       </CardContent>
     </Card>

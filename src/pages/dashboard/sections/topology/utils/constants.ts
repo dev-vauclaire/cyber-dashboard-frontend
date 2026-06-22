@@ -3,7 +3,7 @@ export const MAX_HEIGHT_NODE = 200;
 export const MIN_HEIGHT_NODE = 50;
 
 {/* Représente la largeur maximale d'une node */}
-export const MAX_WIDTH_NODE = 400;
+export const MAX_WIDTH_NODE = 500;
 export const MIN_WIDTH_NODE = 200;
 
 {/* Représente l'écart minimale entre deux nodes sur x et sur y */}
