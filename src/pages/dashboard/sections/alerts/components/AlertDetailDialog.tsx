@@ -25,6 +25,8 @@ import Typography from '@mui/material/Typography';
 import { fetchCommonIpAlertDetail } from '../api/alertsApi';
 import AlertEmailDialog from './AlertEmailDialog';
 import { alertsQueryKeys } from '../queryKeys';
+import { fetchSmtpConfig } from '../../../../settings/sections/emails/api/smtpApi';
+import { smtpQueryKeys } from '../../../../settings/sections/emails/queryKeys';
 import type { CommonIpAlertListItem } from '../types/alertTypes';
 import CtiEnrichmentDialog from './cti/CtiEnrichmentDialog';
 import { useSourceColorContext } from '../../../../../shared/sources/providers/sourceColorContext';
@@ -59,8 +61,22 @@ export default function AlertDetailDialog({
     queryFn: () => fetchCommonIpAlertDetail(alertId),
     enabled: open && alertId > 0,
   });
+  const smtpConfigQuery = useQuery({
+    queryKey: smtpQueryKeys.config,
+    queryFn: fetchSmtpConfig,
+    enabled: open,
+  });
   const canOpenCti = alert?.attacker_ip != null && alert.attacker_ip.trim() !== '';
-  const canOpenEmail = alert?.id != null && canOpenCti;
+  const isSmtpActive = smtpConfigQuery.data?.is_active === true;
+  const canOpenEmail = alert?.id != null && canOpenCti && isSmtpActive && !smtpConfigQuery.isFetching;
+  const emailButtonTooltip =
+    smtpConfigQuery.isFetching
+      ? 'Verification de la configuration SMTP en cours'
+      : smtpConfigQuery.isError
+        ? 'Configuration SMTP indisponible'
+      : isSmtpActive
+        ? ''
+        : 'Configuration SMTP inactive';
 
   function handleClose() {
     setIsCtiOpen(false);
@@ -233,36 +249,40 @@ export default function AlertDetailDialog({
         open={isCtiOpen}
         ipAddress={alert?.attacker_ip ?? null}
         actions={
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<MailOutlineRoundedIcon fontSize="small" />}
-            disabled={!canOpenEmail}
-            onClick={() => setIsEmailOpen(true)}
-            sx={{
-              '&&': {
-                backgroundColor: '#00BFFF',
-                backgroundImage: 'none',
-                borderColor: '#00BFFF',
-                boxShadow: 'none',
-                color: '#FFFFFF',
-              },
-              '&& .MuiButton-startIcon': { color: '#FFFFFF' },
-              '&&:hover': {
-                backgroundColor: '#00A8E0',
-                backgroundImage: 'none',
-                borderColor: '#00A8E0',
-                boxShadow: 'none',
-                color: '#FFFFFF',
-              },
-              '&&.Mui-disabled': {
-                backgroundColor: 'action.disabledBackground',
-                color: 'action.disabled',
-              },
-            }}
-          >
-            Envoyer un email
-          </Button>
+          <Tooltip title={emailButtonTooltip}>
+            <span>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<MailOutlineRoundedIcon fontSize="small" />}
+                disabled={!canOpenEmail}
+                onClick={() => setIsEmailOpen(true)}
+                sx={{
+                  '&&': {
+                    backgroundColor: '#00BFFF',
+                    backgroundImage: 'none',
+                    borderColor: '#00BFFF',
+                    boxShadow: 'none',
+                    color: '#FFFFFF',
+                  },
+                  '&& .MuiButton-startIcon': { color: '#FFFFFF' },
+                  '&&:hover': {
+                    backgroundColor: '#00A8E0',
+                    backgroundImage: 'none',
+                    borderColor: '#00A8E0',
+                    boxShadow: 'none',
+                    color: '#FFFFFF',
+                  },
+                  '&&.Mui-disabled': {
+                    backgroundColor: 'action.disabledBackground',
+                    color: 'action.disabled',
+                  },
+                }}
+              >
+                Envoyer un email
+              </Button>
+            </span>
+          </Tooltip>
         }
         leadingContent={
           alert != null ? (

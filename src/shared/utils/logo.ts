@@ -14,6 +14,7 @@ import ipdataLogo from '../../../assets/ipdata_logo.png';
 import rdapLogo from '../../../assets/rdap_logo.png';
 import shodanLogo from '../../../assets/shodan_logo.png';
 import virustotalLogo from '../../../assets/virustotal_logo.png';
+import ipinfologo from '../../../assets/ipinfo_logo.png'
 
 const COLLECTOR_LOGOS: Record<string, string> = {
   ogo: ogoLogo,
@@ -33,6 +34,7 @@ const CTI_TOOL_LOGOS: Record<string, string> = {
   rdap: rdapLogo,
   shodan: shodanLogo,
   virustotal: virustotalLogo,
+  ipinfo: ipinfologo,
 };
 
 export function getCollectorLogo(collectorType: string | null | undefined): string | null {

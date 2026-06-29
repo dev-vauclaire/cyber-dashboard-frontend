@@ -27,6 +27,7 @@ import {
 import CtiAbuseipdb from './enrichment/CtiAbuseipdb';
 import CtiGreynoise from './enrichment/CtiGreynoise';
 import CtiIpdata from './enrichment/CtiIpdata';
+import CtiIpinfo from './enrichment/CtiIpinfo';
 import CtiRdap from './enrichment/CtiRdap';
 import CtiShodan from './enrichment/CtiShodan';
 import CtiVirustotal from './enrichment/CtiVirustotal';
@@ -78,6 +79,7 @@ const CTI_TOOL_COMPONENTS: Record<
   rdap: createCtiToolQueryContainer('rdap', CtiRdap),
   shodan: createCtiToolQueryContainer('shodan', CtiShodan),
   virustotal: createCtiToolQueryContainer('virustotal', CtiVirustotal),
+  ipinfo: createCtiToolQueryContainer('ipinfo', CtiIpinfo),
 };
 
 export default function CtiEnrichmentDialog({

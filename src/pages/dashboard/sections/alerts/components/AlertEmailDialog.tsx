@@ -1,13 +1,18 @@
 import * as React from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControl from '@mui/material/FormControl';
+import FormLabel from '@mui/material/FormLabel';
 import Stack from '@mui/material/Stack';
+import TextareaAutosize from '@mui/material/TextareaAutosize';
 import TextField from '@mui/material/TextField';
+import { alpha } from '@mui/material/styles';
 import { fetchCtiEnrichment } from '../../../../../shared/cti/ctiApi';
 import { ctiQueryKeys } from '../../../../../shared/cti/queryKeys';
 import { sendCommonIpAlertEmail } from '../api/alertsApi';
@@ -25,12 +30,12 @@ function buildDefaultSubject(ipAddress: string | null): string {
 
 function buildDefaultBody(ipAddress: string | null): string {
   return [
-    'Bonjour,',
+    'Hello,',
     '',
-    `Nous avons observe une activite malveillante associee a l'adresse IP ${ipAddress ?? ''}.`,
-    'Merci de verifier les journaux associes et de prendre les mesures appropriees.',
+    `We have observed malicious activity associated with the IP address ${ipAddress ?? ''}.`,
+    'Please check the related logs and take the appropriate measures.',
     '',
-    'Cordialement,',
+    'Best regards,',
   ].join('\n');
 }
 
@@ -99,7 +104,7 @@ export default function AlertEmailDialog({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Prévisualisation email · {ipAddress}</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ maxHeight: { xs: 'calc(100dvh - 180px)', sm: 560 }, overflowY: 'auto' }}>
         <Stack spacing={2} sx={{ pt: 1 }}>
           {rdapQuery.isError ? (
             <Alert severity="info">
@@ -126,14 +131,50 @@ export default function AlertEmailDialog({
             fullWidth
             size="small"
           />
-          <TextField
-            label="Message"
-            value={body}
-            onChange={(event) => setBody(event.target.value)}
-            fullWidth
-            multiline
-            minRows={8}
-          />
+          <FormControl fullWidth>
+            <FormLabel htmlFor="alert-email-message">Message</FormLabel>
+            <Box
+              sx={(theme) => ({
+                '& textarea': {
+                  width: 1,
+                  boxSizing: 'border-box',
+                  minHeight: 184,
+                  maxHeight: 300,
+                  overflowY: 'auto',
+                  resize: 'vertical',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  backgroundColor: 'background.default',
+                  color: 'text.primary',
+                  font: 'inherit',
+                  lineHeight: 1.5,
+                  p: '8px 12px',
+                  transition: 'border 120ms ease-in',
+                  '&:hover': {
+                    borderColor: 'grey.400',
+                  },
+                  '&:focus': {
+                    borderColor: 'primary.main',
+                    outline: `3px solid ${alpha(theme.palette.primary.main, 0.5)}`,
+                  },
+                  ...theme.applyStyles('dark', {
+                    '&:hover': {
+                      borderColor: 'grey.500',
+                    },
+                  }),
+                },
+              })}
+            >
+              <TextareaAutosize
+                id="alert-email-message"
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                minRows={8}
+                maxRows={12}
+              />
+            </Box>
+          </FormControl>
         </Stack>
       </DialogContent>
       <DialogActions>

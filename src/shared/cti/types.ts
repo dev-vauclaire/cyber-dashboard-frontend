@@ -30,7 +30,8 @@ export type CtiEnrichmentProvider =
   | 'ipdata'
   | 'rdap'
   | 'shodan'
-  | 'virustotal';
+  | 'virustotal'
+  | 'ipinfo';
 
 export type AbuseIpdbCategoryPercentage = {
   category_code: number;
@@ -60,6 +61,17 @@ export type IpDataEnrichmentResponse = {
   country_name: string | null;
   asn_name: string | null;
   is_threat: boolean;
+};
+
+export type IpinfoEnrichmentResponse = {
+  ip_address: string;
+  asn: string | null;
+  as_name: string | null;
+  as_domain: string | null;
+  country_code: string | null;
+  country: string | null;
+  continent_code: string | null;
+  continent: string | null;
 };
 
 export type RdapEnrichmentResponse = {
@@ -104,6 +116,7 @@ export type CtiEnrichmentResponseByProvider = {
   abuseipdb: AbuseIpdbEnrichmentResponse;
   greynoise: GreyNoiseEnrichmentResponse;
   ipdata: IpDataEnrichmentResponse;
+  ipinfo: IpinfoEnrichmentResponse;
   rdap: RdapEnrichmentResponse;
   shodan: ShodanEnrichmentResponse;
   virustotal: VirusTotalEnrichmentResponse;

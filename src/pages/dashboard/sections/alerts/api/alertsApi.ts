@@ -28,4 +28,4 @@ export async function sendCommonIpAlertEmail(
   return apiClient.post<AlertEmailResponse>(`/api/alerts/common-ips/${alertId}/email`, {
     body: payload,
   });
-}
+} 

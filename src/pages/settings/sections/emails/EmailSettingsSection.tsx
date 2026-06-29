@@ -7,9 +7,7 @@ import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
-import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
 import {
   activateSmtpConfig,
   deactivateSmtpConfig,
@@ -134,15 +132,6 @@ export default function EmailSettingsSection() {
                 label="Nouveau mot de passe SMTP"
                 onChange={(event) => updateForm('smtp_password', event.target.value)}
               />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
-                <Switch
-                  checked={Boolean(form.auto_email_enabled)}
-                  onChange={(event) => updateForm('auto_email_enabled', event.target.checked)}
-                />
-                <Typography variant="body2">Emails automatiques préparés</Typography>
-              </Stack>
             </Grid>
           </Grid>
           <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
