@@ -128,7 +128,7 @@ export default function CtiConfigCard({
                 onChange={(event) => onApiKeyChange(event.target.value)}
                 helperText={
                   config.has_api_key
-                    ? 'Laisse ce champ vide pour revalider la clé enregistrée.'
+                    ? 'Laissez ce champ vide pour revalider la clé enregistrée.'
                     : 'Une clé est requise avant la première validation.'
                 }
                 slotProps={{

@@ -126,7 +126,7 @@ export default function CollectorConfigCard({
               <TextField
                 fullWidth
                 size="small"
-                label="Nouvel email"
+                label="Nouvelle adresse e-mail"
                 value={form.email ?? ''}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, email: event.target.value }))
@@ -146,7 +146,7 @@ export default function CollectorConfigCard({
             ) : null}
           </Stack>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Clé {config.api_key_hint ?? 'absente'} · email {config.email_hint ?? 'absent'}
+            Clé {config.api_key_hint ?? 'absente'} · e-mail {config.email_hint ?? 'absent'}
           </Typography>
           {config.last_validation_error ? (
             <Alert severity="warning">{config.last_validation_error}</Alert>
@@ -171,7 +171,7 @@ export default function CollectorConfigCard({
               {config.is_active ? 'Désactiver' : 'Activer'}
             </Button>
             <Button size="small" onClick={() => onAction({ action: 'inventory', id: config.id })}>
-              Relancer inventaire
+              Relancer l&apos;inventaire
             </Button>
             {config.has_api_key ? (
               <Button
@@ -179,7 +179,7 @@ export default function CollectorConfigCard({
                 color="warning"
                 onClick={() => onAction({ action: 'delete-key', id: config.id })}
               >
-                Supprimer clé
+                Supprimer la clé
               </Button>
             ) : null}
             {config.has_email ? (
@@ -188,7 +188,7 @@ export default function CollectorConfigCard({
                 color="warning"
                 onClick={() => onAction({ action: 'delete-email', id: config.id })}
               >
-                Supprimer email
+                Supprimer l&apos;e-mail
               </Button>
             ) : null}
             <Button

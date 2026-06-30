@@ -231,7 +231,7 @@ export default function ChartsSection() {
             Graphiques
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Evolution temporelle et repartition des attaques par source ou par type.
+            Évolution temporelle et répartition des attaques par source ou par type.
           </Typography>
         </Stack>
         <Stack
@@ -263,13 +263,13 @@ export default function ChartsSection() {
             size="small"
             value={distributionMode}
             onChange={handleDistributionModeChange}
-            aria-label="Mode de repartition des attaques"
+            aria-label="Mode de répartition des attaques"
           >
-            <ToggleButton value="source" aria-label="Repartition par source">
+            <ToggleButton value="source" aria-label="Répartition par source">
               <SourceRoundedIcon fontSize="small" sx={{ mr: 0.75 }} />
               Par source
             </ToggleButton>
-            <ToggleButton value="type" aria-label="Repartition par type">
+            <ToggleButton value="type" aria-label="Répartition par type">
               <DonutLargeRoundedIcon fontSize="small" sx={{ mr: 0.75 }} />
               Par type
             </ToggleButton>
@@ -278,7 +278,7 @@ export default function ChartsSection() {
       </Stack>
       {isDateRangeIncomplete ? (
         <Alert severity="info">
-          Selectionne une periode complete dans cette section pour charger les donnees
+          Sélectionnez une période complète dans cette section pour charger les données
           d&apos;analyse.
         </Alert>
       ) : null}

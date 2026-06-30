@@ -22,7 +22,7 @@ export const PROVIDER_LABELS: Record<CtiEnrichmentProvider, string> = {
 
 export const FIELD_LABELS: Record<string, string> = {
   abuse_confidence_score: 'Score AbuseIPDB',
-  abuse_contact_email: 'Contact abuse',
+  abuse_contact_email: 'Contact de signalement d’abus',
   as_owner: 'Propriétaire AS',
   as_domain: 'Domaine AS',
   as_name: 'Nom AS',

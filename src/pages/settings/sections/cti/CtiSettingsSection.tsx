@@ -141,7 +141,7 @@ export default function CtiSettingsSection() {
           Fournisseurs CTI
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Configure, valide et active indépendamment chaque fournisseur d&apos;enrichissement.
+          Configurez, validez et activez indépendamment chaque fournisseur d&apos;enrichissement.
         </Typography>
       </Stack>
 

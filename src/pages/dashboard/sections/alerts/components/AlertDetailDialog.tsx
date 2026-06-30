@@ -71,7 +71,7 @@ export default function AlertDetailDialog({
   const canOpenEmail = alert?.id != null && canOpenCti && isSmtpActive && !smtpConfigQuery.isFetching;
   const emailButtonTooltip =
     smtpConfigQuery.isFetching
-      ? 'Verification de la configuration SMTP en cours'
+      ? 'Vérification de la configuration SMTP en cours'
       : smtpConfigQuery.isError
         ? 'Configuration SMTP indisponible'
       : isSmtpActive
@@ -94,7 +94,7 @@ export default function AlertDetailDialog({
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2, py: 1 }}>
         <DialogTitle>
-          Detail de l&apos;alerte{alert ? ` ${alert.attacker_ip}` : ''}
+          Détail de l&apos;alerte{alert ? ` ${alert.attacker_ip}` : ''}
         </DialogTitle>
         <DialogActions>
           <Button onClick={handleClose}>Fermer</Button>
@@ -111,7 +111,7 @@ export default function AlertDetailDialog({
 
         {detailQuery.isError ? (
           <Alert severity="warning" sx={{ mt: 1 }}>
-            Impossible de charger le detail de cette alerte.
+            Impossible de charger le détail de cette alerte.
           </Alert>
         ) : null}
 
@@ -119,7 +119,7 @@ export default function AlertDetailDialog({
         !detailQuery.isError &&
         (detailQuery.data == null || detailQuery.data.sources.length === 0) ? (
           <Alert severity="info" sx={{ mt: 1 }}>
-            Aucun detail source n&apos;est disponible pour cette alerte.
+            Aucun détail source n&apos;est disponible pour cette alerte.
           </Alert>
         ) : null}
 
@@ -132,13 +132,13 @@ export default function AlertDetailDialog({
               {buildDetailSummary(detailQuery.data)}
             </Typography>
             <TableContainer>
-              <Table size="small" aria-label={`Detail de ${alert?.attacker_ip ?? 'l alerte'}`}>
+              <Table size="small" aria-label={`Détail de ${alert?.attacker_ip ?? "l'alerte"}`}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Source</TableCell>
                     <TableCell>Premier signalement</TableCell>
                     <TableCell>Dernier signalement</TableCell>
-                    <TableCell>Hits</TableCell>
+                    <TableCell>Occurrences</TableCell>
                     <TableCell>Portail</TableCell>
                   </TableRow>
                 </TableHead>
@@ -279,7 +279,7 @@ export default function AlertDetailDialog({
                   },
                 }}
               >
-                Envoyer un email
+                Envoyer un e-mail
               </Button>
             </span>
           </Tooltip>

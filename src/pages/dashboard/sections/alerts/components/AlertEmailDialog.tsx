@@ -30,12 +30,12 @@ function buildDefaultSubject(ipAddress: string | null): string {
 
 function buildDefaultBody(ipAddress: string | null): string {
   return [
-    'Hello,',
+    'Bonjour,',
     '',
-    `We have observed malicious activity associated with the IP address ${ipAddress ?? ''}.`,
-    'Please check the related logs and take the appropriate measures.',
+    `Nous avons observé une activité malveillante associée à l'adresse IP ${ipAddress ?? ''}.`,
+    'Merci de vérifier les journaux concernés et de prendre les mesures appropriées.',
     '',
-    'Best regards,',
+    'Cordialement,',
   ].join('\n');
 }
 
@@ -103,17 +103,17 @@ export default function AlertEmailDialog({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Prévisualisation email · {ipAddress}</DialogTitle>
+      <DialogTitle>Prévisualisation de l&apos;e-mail · {ipAddress}</DialogTitle>
       <DialogContent sx={{ maxHeight: { xs: 'calc(100dvh - 180px)', sm: 560 }, overflowY: 'auto' }}>
         <Stack spacing={2} sx={{ pt: 1 }}>
           {rdapQuery.isError ? (
             <Alert severity="info">
-              Contact abuse RDAP indisponible. Renseigne le destinataire manuellement.
+              Contact de signalement d&apos;abus RDAP indisponible. Renseignez le destinataire manuellement.
             </Alert>
           ) : null}
           {sendMutation.isError ? (
             <Alert severity="warning">
-              Impossible d&apos;envoyer l&apos;email.
+              Impossible d&apos;envoyer l&apos;e-mail.
               {sendMutation.error instanceof Error ? ` ${sendMutation.error.message}` : ''}
             </Alert>
           ) : null}

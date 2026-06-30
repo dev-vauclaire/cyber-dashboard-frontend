@@ -220,7 +220,7 @@ export default function CtiEnrichmentDialog({
           ) : null}
           {!configsQuery.isLoading && !configsQuery.isError && activeProviders.length === 0 ? (
             <Alert severity="info">
-              Aucun fournisseur CTI actif. Active un outil CTI dans les paramètres.
+              Aucun fournisseur CTI actif. Activez un outil CTI dans les paramètres.
             </Alert>
           ) : null}
           <Box

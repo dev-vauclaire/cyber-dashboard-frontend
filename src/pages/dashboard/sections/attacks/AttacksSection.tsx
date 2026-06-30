@@ -124,8 +124,7 @@ export default function AttacksSection() {
           Table des attaques
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Consultation paginee des attaques. La table reste volontairement simple,
-          et les details complementaires sont consultables dans la modal.
+          Consultation paginée des attaques. Cliquez sur une attaque pour voir ses détails. 
         </Typography>
       </Stack>
 
@@ -211,28 +210,27 @@ export default function AttacksSection() {
 
             {sourcesQuery.isError ? (
               <Alert severity="warning">
-                Impossible de charger la liste des sources. Le filtre source peut etre
-                incomplet.
+                Impossible de charger la liste des sources.
                 {sourcesQuery.error instanceof Error ? ` (${sourcesQuery.error.message})` : ''}
               </Alert>
             ) : null}
 
             {attacksQuery.isError ? (
               <Alert severity="error">
-                Impossible de charger les attaques. Verifie le backend puis reessaie.
+                Impossible de charger les attaques.
                 {attacksQuery.error instanceof Error ? ` (${attacksQuery.error.message})` : ''}
               </Alert>
             ) : null}
 
             {!isTableLoading && !attacksQuery.isError && rows.length === 0 ? (
               <Alert severity="info">
-                Aucune attaque ne correspond aux filtres locaux selectionnes.
+                Aucune attaque ne correspond aux filtres locaux sélectionnés.
               </Alert>
             ) : null}
 
             <Stack spacing={1}>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Pagination cote serveur, plus recentes en premier.
+                Pagination côté serveur, plus récentes en premier.
               </Typography>
               <Box sx={{ width: '100%', overflowX: 'auto' }}>
                 <CustomizedDataGrid

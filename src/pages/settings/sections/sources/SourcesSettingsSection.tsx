@@ -67,7 +67,7 @@ function InventorySummaryCard({
   if (isError) {
     return (
       <Alert severity="warning">
-        Impossible de charger l&apos;inventaire agrege des sources.
+        Impossible de charger l&apos;inventaire agrégé des sources.
       </Alert>
     );
   }
@@ -260,8 +260,8 @@ export default function SourcesSettingsSection() {
           Sources
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Liste des sources actives et inactives, avec renommage, statut et couleur
-          modifiables inline.
+          Liste des types d'équipements et des sources actives et inactives, avec renommage, statut et couleur
+          modifiables.
         </Typography>
       </Stack>
       <Grid container spacing={2} columns={12}>
@@ -271,10 +271,10 @@ export default function SourcesSettingsSection() {
               <Stack spacing={2}>
                 <Stack spacing={0.5}>
                   <Typography component="h3" variant="subtitle2">
-                    Inventaire par type de capteur
+                    Inventaire des types d'équipements
                   </Typography>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Resume simple des sources actives et inactives par famille de capteurs.
+                    Types d'équipements pris en charge.
                   </Typography>
                 </Stack>
                 <InventorySummaryCard
@@ -296,7 +296,7 @@ export default function SourcesSettingsSection() {
                 >
                   <Stack spacing={0.5}>
                     <Typography component="h3" variant="subtitle2">
-                      Actions sur les sources
+                      Inventaire des sources
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       {activeSourcesCount} active{activeSourcesCount > 1 ? 's' : ''} ·{' '}
@@ -328,7 +328,7 @@ export default function SourcesSettingsSection() {
 
                 {!sourcesQuery.isLoading && !sourcesQuery.isError && sources.length === 0 ? (
                   <Alert severity="info">
-                    Aucune source n&apos;a ete retournee par le backend.
+                    Aucune source n&apos;a été retournée par le serveur.
                   </Alert>
                 ) : null}
 

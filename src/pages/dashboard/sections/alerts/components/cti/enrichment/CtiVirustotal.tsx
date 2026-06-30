@@ -16,11 +16,11 @@ const FIELD_KEYS = [
 ] as const satisfies readonly (keyof VirusTotalEnrichmentResponse)[];
 const STAT_COLORS = ['#D32F2F', '#ED6C02', '#2E7D32', '#64748B', '#7B1FA2'];
 const STAT_DEFINITIONS = [
-  { key: 'malicious', label: 'Malicious' },
-  { key: 'suspicious', label: 'Suspicious' },
-  { key: 'harmless', label: 'Harmless' },
-  { key: 'undetected', label: 'Undetected' },
-  { key: 'timeout', label: 'Timeout' },
+  { key: 'malicious', label: 'Malveillant' },
+  { key: 'suspicious', label: 'Suspect' },
+  { key: 'harmless', label: 'Sans danger' },
+  { key: 'undetected', label: 'Non détecté' },
+  { key: 'timeout', label: 'Délai dépassé' },
 ] as const satisfies readonly { key: keyof VirusTotalAnalysisStats; label: string }[];
 
 function buildAnalysisChartData(

@@ -57,7 +57,7 @@ function formatDurationFromSources(sources: CommonIpAlertSourceDetail[]): string
   return hours > 0 ? `${days} j ${hours} h` : `${days} j`;
 }
 
-{/* Calcul un pourcentage de hits d'une source par rapport au total des hits observés */}
+{/* Calcule le pourcentage d'occurrences d'une source par rapport au total observé */}
 function formatHitShare(hitCount: number, totalHits: number): string {
   if (totalHits <= 0) {
     return '0 %';
@@ -130,7 +130,7 @@ export default function AlertCtiDetailBox({
                 size="small"
                 color="primary"
                 variant="outlined"
-                label={`${totalHits.toLocaleString('fr-FR')} hit${totalHits > 1 ? 's' : ''} au total`}
+                label={`${totalHits.toLocaleString('fr-FR')} occurrence${totalHits > 1 ? 's' : ''} au total`}
               />
             ) : null}
             {hasSourceContext ? (
@@ -155,11 +155,11 @@ export default function AlertCtiDetailBox({
             <CtiProviderPieChart
               colors={sourceHitChartColors}
               items={sourceHitChartItems}
-              title="Répartition des hits par source"
+              title="Répartition des occurrences par source"
             />
             <Stack spacing={1}>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Détail par source : nom, dernière vue et part de hits sur le total observé.
+                Détail par source : nom, dernière vue et part des occurrences sur le total observé.
               </Typography>
               <Stack
                 spacing={0.75}

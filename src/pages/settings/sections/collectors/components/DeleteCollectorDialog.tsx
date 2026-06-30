@@ -37,8 +37,8 @@ export default function DeleteCollectorDialog({
       <DialogContent>
         <Stack spacing={2}>
           <DialogContentText>
-            La configuration « {collectorName} », sa clé API et son email associés seront
-            définitivement supprimés.
+            La configuration « {collectorName} » sera définitivement supprimée, ainsi que
+            sa clé API et son adresse e-mail associées.
           </DialogContentText>
           <Alert severity="warning">
             Cette action est irréversible. Les prochaines collectes de cette configuration

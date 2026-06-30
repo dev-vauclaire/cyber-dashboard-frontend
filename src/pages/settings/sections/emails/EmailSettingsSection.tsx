@@ -82,7 +82,7 @@ export default function EmailSettingsSection() {
               <TextField
                 fullWidth
                 size="small"
-                label="SMTP host"
+                label="Hôte SMTP"
                 value={form.smtp_host ?? ''}
                 onChange={(event) => updateForm('smtp_host', event.target.value)}
               />
@@ -92,7 +92,7 @@ export default function EmailSettingsSection() {
                 fullWidth
                 size="small"
                 type="number"
-                label="SMTP port"
+                label="Port SMTP"
                 value={form.smtp_port ?? ''}
                 onChange={(event) => updateForm('smtp_port', Number(event.target.value))}
               />
@@ -110,7 +110,7 @@ export default function EmailSettingsSection() {
               <TextField
                 fullWidth
                 size="small"
-                label="From"
+                label="Adresse d'expédition"
                 value={form.smtp_from ?? ''}
                 onChange={(event) => updateForm('smtp_from', event.target.value)}
               />

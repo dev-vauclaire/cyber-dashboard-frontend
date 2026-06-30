@@ -59,7 +59,7 @@ export default function LinearChart({
     <Card variant="outlined" sx={{ width: '100%', height: '100%' }}>
       <CardContent>
         <Typography component="h2" variant="subtitle2" gutterBottom>
-          Evolution des attaques dans le temps
+          Évolution des attaques dans le temps
         </Typography>
         <Stack sx={{ justifyContent: 'space-between' }}>
           <Stack
@@ -79,7 +79,7 @@ export default function LinearChart({
             )}
           </Stack>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Une courbe par source, agregee par jour sur la periode selectionnee.
+            Une courbe par source, agrégée par jour sur la période sélectionnée.
           </Typography>
         </Stack>
         {isLoading ? (
@@ -91,12 +91,12 @@ export default function LinearChart({
         ) : null}
         {isError ? (
           <Alert severity="warning" sx={{ mt: 2 }}>
-            Impossible de charger l&apos;evolution des attaques pour cette periode.
+            Impossible de charger l&apos;évolution des attaques pour cette période.
           </Alert>
         ) : null}
         {isEmpty ? (
           <Alert severity="info" sx={{ mt: 2 }}>
-            Aucune attaque n&apos;a ete trouvee sur la periode selectionnee.
+            Aucune attaque n&apos;a été trouvée sur la période sélectionnée.
           </Alert>
         ) : null}
         {!isLoading && !isError && !isEmpty ? (

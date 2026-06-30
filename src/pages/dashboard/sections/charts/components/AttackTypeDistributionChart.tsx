@@ -62,10 +62,10 @@ export default function AttackTypeDistributionChart({
     <Card variant="outlined" sx={{ height: '100%' }}>
       <CardContent>
         <Typography component="h2" variant="subtitle2">
-          Repartition des attaques par type
+          Répartition des attaques par type
         </Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Nombre et poids de chaque type sur la periode selectionnee.
+          Nombre et poids de chaque type sur la période sélectionnée.
         </Typography>
         {isLoading ? (
           <Stack spacing={2} sx={{ pt: 2 }}>
@@ -76,12 +76,12 @@ export default function AttackTypeDistributionChart({
         ) : null}
         {isError ? (
           <Alert severity="warning" sx={{ mt: 2 }}>
-            Impossible de charger la repartition des attaques par type.
+            Impossible de charger la répartition des attaques par type.
           </Alert>
         ) : null}
         {isEmpty ? (
           <Alert severity="info" sx={{ mt: 2 }}>
-            Aucun type d&apos;attaque n&apos;a ete trouve sur la periode selectionnee.
+            Aucun type d&apos;attaque n&apos;a été trouvé sur la période sélectionnée.
           </Alert>
         ) : null}
         {!isLoading && !isError && !isEmpty ? (

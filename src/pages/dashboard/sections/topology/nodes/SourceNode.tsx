@@ -83,7 +83,7 @@ export default function SourceNode({ data }: NodeProps<Node<SourceNodeData, 'sou
               label={`${source.alert_count} alerte${source.alert_count > 1 ? 's' : ''}`}
             />
             {hasSyncError ? (
-              <Chip size="small" color="error" variant="outlined" label="Sync erreur" />
+              <Chip size="small" color="error" variant="outlined" label="Erreur de synchronisation" />
             ) : null}
           </Stack>
         </Stack>

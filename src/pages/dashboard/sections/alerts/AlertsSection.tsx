@@ -161,7 +161,7 @@ export default function AlertsSection() {
           Alertes IP communes
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Consultez les alertes IP communes détectées par plusieurs sources. Cliquez sur une alerte pour voir plus de details. Vous pouvez filtrer les alertes par source concernées, plage de dates et nombre minimum de sources distinctes.
+          Consultez les alertes IP communes détectées par plusieurs sources. Cliquez sur une alerte pour voir ses détails, lancer un enrichissement CTI ciblé et envoyer un rapport d&apos;incident au contact de signalement d&apos;abus.
         </Typography>
       </Stack>
       <Card variant="outlined">
@@ -258,7 +258,7 @@ export default function AlertsSection() {
 
             {sourcesQuery.isError ? (
               <Alert severity="warning">
-                Impossible de charger la liste des sources. Le filtre source peut etre
+                Impossible de charger la liste des sources. Le filtre source peut être
                 incomplet.
                 {sourcesQuery.error instanceof Error ? ` (${sourcesQuery.error.message})` : ''}
               </Alert>
@@ -275,13 +275,13 @@ export default function AlertsSection() {
             ) : null}
             {!isTableLoading && !alertsQuery.isError && totalItems === 0 ? (
               <Alert severity="info">
-                Aucune alerte IP commune ne correspond aux filtres selectionnes.
+                Aucune alerte IP commune ne correspond aux filtres sélectionnés.
               </Alert>
             ) : null}
             {!alertsQuery.isError && (rows.length > 0 || totalItems > 0) ? (
               <Stack spacing={1.5}>
                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Pagination cote serveur, triee par nombre de sources distinctes.
+                  Pagination côté serveur, triée par nombre de sources distinctes.
                 </Typography>
                 <TableContainer
                   sx={{

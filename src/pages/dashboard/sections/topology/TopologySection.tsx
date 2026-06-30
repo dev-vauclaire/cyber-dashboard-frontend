@@ -389,7 +389,7 @@ export default function TopologySection() {
           }}
         />
         <TextField
-          label="Limite alertes"
+          label="Limite d'alertes"
           type="number"
           size="small"
           value={alertLimit}

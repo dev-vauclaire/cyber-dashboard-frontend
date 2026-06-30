@@ -23,7 +23,7 @@ type DetailRowProps = {
 
 function formatAttackTypeLabel(attackType: AttackRecord['attack_type']): string {
   if (attackType == null || attackType.trim() === '') {
-    return 'Non renseigne';
+    return 'Non renseigné';
   }
 
   return attackType.toUpperCase();
@@ -63,7 +63,7 @@ export default function AttackDetailDialog({
       open={open}
       onClose={onClose}
       title={`Attaque ${attack.id}`}
-      subtitle="Structure simple, prete a etre enrichie dans une future modal detaillee."
+      subtitle="Structure simple, prête à être enrichie dans une future fenêtre de détail."
     >
       <Stack spacing={2}>
         <Stack

@@ -31,6 +31,19 @@ function statusColor(status: string | null | undefined): 'default' | 'error' | '
   return 'default';
 }
 
+function statusLabel(status: string | null | undefined): string {
+  if (status === 'success') {
+    return 'Valide';
+  }
+  if (status === 'failed') {
+    return 'Invalide';
+  }
+  if (status === 'not_tested' || status === 'not_run') {
+    return 'Non testé';
+  }
+  return 'Non validé';
+}
+
 { /* Node représentant un collecteur */ }
 export default function CollectorNode({ data }: NodeProps<Node<CollectorNodeData, 'collector'>>) {
   const { collector, isTopologySwapped } = data;
@@ -73,7 +86,7 @@ export default function CollectorNode({ data }: NodeProps<Node<CollectorNodeData
               size="small"
               color={statusColor(collector.last_validation_status)}
               variant="outlined"
-              label={collector.last_validation_status ?? 'Non validé'}
+              label={statusLabel(collector.last_validation_status)}
             />
           </Stack>
         </Stack>

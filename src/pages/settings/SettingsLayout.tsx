@@ -14,7 +14,7 @@ type SettingsLayoutProps = {
 
 const settingsTabs = [
   { label: 'CTI', to: '/settings/cti', value: '/settings/cti' },
-  { label: 'Emails', to: '/settings/emails', value: '/settings/emails' },
+  { label: 'E-mails', to: '/settings/emails', value: '/settings/emails' },
   { label: 'Collecteurs', to: '/settings/collectors', value: '/settings/collectors' },
   { label: 'Sources', to: '/settings/sources', value: '/settings/sources' },
 ];
@@ -38,11 +38,11 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
               Paramètres
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Configuration CTI, SMTP, collecteurs et sources.
+              Configuration CTI, e-mails, collecteurs et sources.
             </Typography>
           </Stack>
           <Button component={RouterLink} to="/" startIcon={<ArrowBackRoundedIcon />}>
-            Dashboard
+            Tableau de bord
           </Button>
         </Stack>
         <Tabs value={getActiveTab(location.pathname)} variant="scrollable" scrollButtons="auto">

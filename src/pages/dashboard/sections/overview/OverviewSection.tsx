@@ -31,7 +31,7 @@ const overviewCardDefinitions = [
   {
     key: 'total_common_ip_alerts',
     title: 'Alertes d\'IP communes',
-    interval: 'Nombre d\'alertes d\'IP communes a au moins 2 sources',
+    interval: 'Nombre d\'alertes d\'IP communes avec au moins 2 sources',
   },
   {
     key: 'total_active_sources',
@@ -59,7 +59,7 @@ export default function OverviewSection() {
           Aperçu global
         </Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Vue synthétique prenant en compte l'ensemble de la base de donnée.
+          Vue synthétique prenant en compte l&apos;ensemble de la base de données.
         </Typography>
       </Stack>
       <Grid container spacing={2} columns={12}>
@@ -80,12 +80,12 @@ export default function OverviewSection() {
       </Grid>
       {isError ? (
         <Alert severity="warning">
-          Impossible de charger les KPI d&apos;overview pour le moment.
+          Impossible de charger les indicateurs d&apos;aperçu global pour le moment. Vérifiez que l&apos;API est bien disponible.
         </Alert>
       ) : null}
       {isEmpty ? (
         <Alert severity="info">
-          Aucun indicateur d&apos;overview n&apos;a ete retourne par l&apos;API.
+          Aucun indicateur d&apos;aperçu global n&apos;a été retourné par l&apos;API.
         </Alert>
       ) : null}
     </Stack>

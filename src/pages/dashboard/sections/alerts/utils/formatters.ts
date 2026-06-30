@@ -12,7 +12,7 @@ export function buildDetailSummary(detail: CommonIpAlertDetail | undefined): str
 
   const totalHits = detail.sources.reduce((sum, source) => sum + source.hit_count, 0);
 
-  return `${detail.sources.length} source${detail.sources.length > 1 ? 's' : ''} · ${totalHits} hit${totalHits > 1 ? 's' : ''}`;
+  return `${detail.sources.length} source${detail.sources.length > 1 ? 's' : ''} · ${totalHits} occurrence${totalHits > 1 ? 's' : ''}`;
 }
 
 export function formatSelectedSources(
@@ -35,5 +35,5 @@ export function formatSelectedSources(
     return selectedLabels.join(', ');
   }
 
-  return `${selectedLabels.length} sources selectionnees`;
+  return `${selectedLabels.length} sources sélectionnées`;
 }
