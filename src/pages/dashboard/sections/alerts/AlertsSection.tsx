@@ -281,7 +281,7 @@ export default function AlertsSection() {
             {!alertsQuery.isError && (rows.length > 0 || totalItems > 0) ? (
               <Stack spacing={1.5}>
                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Pagination côté serveur, triée par nombre de sources distinctes.
+                  Triée par nombre de sources distinctes.
                 </Typography>
                 <TableContainer
                   sx={{

@@ -170,6 +170,7 @@ export default function CollectorsSettingsSection() {
         errorMessage={deleteMutation.isError ? deleteMutation.error.message : null}
         isDeleting={deleteMutation.isPending}
         open={collectorToDelete != null}
+        supportsEmail={collectorToDelete?.collector_type !== 'serenicity'}
         onCancel={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />

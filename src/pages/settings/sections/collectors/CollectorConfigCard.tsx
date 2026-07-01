@@ -53,11 +53,13 @@ export default function CollectorConfigCard({
     });
   }, [config]);
 
+  const formCollectorType = form.collector_type ?? config.collector_type;
+  const formSupportsEmail = formCollectorType !== 'serenicity';
   const savePayload: AttacksCollectorConfigPayload = {
     name: form.name,
-    collector_type: form.collector_type,
+    collector_type: formCollectorType,
     ...(form.api_key?.trim() ? { api_key: form.api_key } : {}),
-    ...(form.email?.trim() ? { email: form.email } : {}),
+    ...(formSupportsEmail && form.email?.trim() ? { email: form.email } : {}),
   };
 
   const collectorLogo = getCollectorLogo(config.collector_type);
@@ -97,20 +99,22 @@ export default function CollectorConfigCard({
                 <InputLabel>Type</InputLabel>
                 <Select
                   label="Type"
-                  value={form.collector_type ?? config.collector_type}
-                  onChange={(event) =>
+                  value={formCollectorType}
+                  onChange={(event) => {
+                    const collectorType = event.target.value as CollectorType;
                     setForm((current) => ({
                       ...current,
-                      collector_type: event.target.value as CollectorType,
-                    }))
-                  }
+                      collector_type: collectorType,
+                      email: collectorType === 'serenicity' ? '' : current.email,
+                    }));
+                  }}
                 >
                   <MenuItem value="ogo">OGO</MenuItem>
                   <MenuItem value="serenicity">Serenicity</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid size={{ xs: 12, md: formSupportsEmail ? 6 : 12 }}>
               <TextField
                 fullWidth
                 size="small"
@@ -122,17 +126,19 @@ export default function CollectorConfigCard({
                 }
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Nouvelle adresse e-mail"
-                value={form.email ?? ''}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, email: event.target.value }))
-                }
-              />
-            </Grid>
+            {formSupportsEmail ? (
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Nouvelle adresse e-mail"
+                  value={form.email ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, email: event.target.value }))
+                  }
+                />
+              </Grid>
+            ) : null}
           </Grid>
           <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
             <Chip size="small" label={config.collector_type.toUpperCase()} />
@@ -146,7 +152,9 @@ export default function CollectorConfigCard({
             ) : null}
           </Stack>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Clé {config.api_key_hint ?? 'absente'} · e-mail {config.email_hint ?? 'absent'}
+            {formSupportsEmail
+              ? `Clé ${config.api_key_hint ?? 'absente'} · e-mail ${config.email_hint ?? 'absent'}`
+              : `Clé ${config.api_key_hint ?? 'absente'}`}
           </Typography>
           {config.last_validation_error ? (
             <Alert severity="warning">{config.last_validation_error}</Alert>
@@ -182,7 +190,7 @@ export default function CollectorConfigCard({
                 Supprimer la clé
               </Button>
             ) : null}
-            {config.has_email ? (
+            {formSupportsEmail && config.has_email ? (
               <Button
                 size="small"
                 color="warning"

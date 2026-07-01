@@ -13,6 +13,7 @@ type DeleteCollectorDialogProps = {
   errorMessage: string | null;
   isDeleting: boolean;
   open: boolean;
+  supportsEmail: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -22,6 +23,7 @@ export default function DeleteCollectorDialog({
   errorMessage,
   isDeleting,
   open,
+  supportsEmail,
   onCancel,
   onConfirm,
 }: DeleteCollectorDialogProps) {
@@ -38,7 +40,9 @@ export default function DeleteCollectorDialog({
         <Stack spacing={2}>
           <DialogContentText>
             La configuration « {collectorName} » sera définitivement supprimée, ainsi que
-            sa clé API et son adresse e-mail associées.
+            {supportsEmail
+              ? ' sa clé API et son adresse e-mail associées.'
+              : ' sa clé API associée.'}
           </DialogContentText>
           <Alert severity="warning">
             Cette action est irréversible. Les prochaines collectes de cette configuration

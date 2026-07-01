@@ -63,7 +63,7 @@ export default function AttackDetailDialog({
       open={open}
       onClose={onClose}
       title={`Attaque ${attack.id}`}
-      subtitle="Structure simple, prête à être enrichie dans une future fenêtre de détail."
+      subtitle="Détails de l'attaque"
     >
       <Stack spacing={2}>
         <Stack

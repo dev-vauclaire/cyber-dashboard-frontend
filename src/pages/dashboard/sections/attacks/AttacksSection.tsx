@@ -230,7 +230,7 @@ export default function AttacksSection() {
 
             <Stack spacing={1}>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Pagination côté serveur, plus récentes en premier.
+                Plus récentes en premier.
               </Typography>
               <Box sx={{ width: '100%', overflowX: 'auto' }}>
                 <CustomizedDataGrid
